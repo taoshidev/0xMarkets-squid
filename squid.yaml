@@ -1,0 +1,14 @@
+manifest_version: subsquid.io/v0.1
+name: 0xmarkets-base-sepolia
+version: 1
+description: 0xMarkets indexer for Base Sepolia testnet
+
+build:
+
+deploy:
+  addons:
+    postgres:
+  processor:
+    cmd: ["node", "lib/main.js"]
+  api:
+    cmd: ["npx", "squid-graphql-server"]

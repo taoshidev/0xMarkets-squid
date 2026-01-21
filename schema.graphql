@@ -1,0 +1,403 @@
+# 0xMarkets Subsquid Schema
+# Aligned with GMX Synthetics Subsquid schema for frontend compatibility
+
+# =============================================================================
+# TRADING ENTITIES
+# =============================================================================
+
+type Transaction @entity {
+  id: ID!
+  hash: String! @index
+  blockNumber: Int!
+  timestamp: Int!
+}
+
+type TradeAction @entity {
+  id: ID!
+  account: String! @index
+  eventName: String! @index
+  marketAddress: String @index
+  orderType: Int!
+  orderKey: String! @index
+  isLong: Boolean
+
+  # Swap path for swap orders
+  swapPath: [String!]!
+
+  # Collateral & Size
+  initialCollateralTokenAddress: String!
+  initialCollateralDeltaAmount: BigInt!
+  sizeDeltaUsd: BigInt
+  sizeDeltaInTokens: BigInt
+
+  # Prices
+  acceptablePrice: BigInt
+  executionPrice: BigInt
+  triggerPrice: BigInt
+  contractTriggerPrice: BigInt
+  indexTokenPriceMin: BigInt
+  indexTokenPriceMax: BigInt
+  collateralTokenPriceMin: BigInt
+  collateralTokenPriceMax: BigInt
+
+  # Output
+  minOutputAmount: BigInt
+  executionAmountOut: BigInt
+
+  # Fees
+  positionFeeAmount: BigInt
+  borrowingFeeAmount: BigInt
+  fundingFeeAmount: BigInt
+  liquidationFeeAmount: BigInt
+  collateralTotalCostAmount: BigInt
+
+  # PnL & Impact
+  pnlUsd: BigInt
+  basePnlUsd: BigInt
+  priceImpactUsd: BigInt
+  priceImpactDiffUsd: BigInt
+  priceImpactAmount: BigInt
+  swapImpactUsd: BigInt
+
+  # TWAP
+  twapGroupId: String
+  numberOfParts: Int
+  totalImpactUsd: BigInt
+  proportionalPendingImpactUsd: BigInt
+
+  # Metadata
+  reason: String
+  reasonBytes: String
+  shouldUnwrapNativeToken: Boolean
+  decreasePositionSwapType: Int
+  uiFeeReceiver: String!
+  srcChainId: BigInt
+
+  # Relations
+  transaction: Transaction!
+  timestamp: Int! @index
+}
+
+type Position @entity {
+  id: ID!
+  account: String! @index
+  market: String! @index
+  collateralToken: String!
+  isLong: Boolean!
+
+  sizeInUsd: BigInt!
+  sizeInTokens: BigInt!
+  collateralAmount: BigInt!
+  entryPrice: BigInt!
+  maxSize: BigInt!
+
+  # Fees
+  realizedFees: BigInt!
+  unrealizedFees: BigInt!
+  realizedPriceImpact: BigInt!
+  unrealizedPriceImpact: BigInt!
+
+  # PnL
+  realizedPnl: BigInt!
+  unrealizedPnl: BigInt!
+
+  # Snapshot support
+  snapshotTimestamp: Int
+  isSnapshot: Boolean!
+
+  createdAt: Int!
+  updatedAt: Int!
+}
+
+# =============================================================================
+# ACCOUNT STATISTICS
+# =============================================================================
+
+type AccountStat @entity {
+  id: ID!
+
+  closedCount: Int!
+  wins: Int!
+  losses: Int!
+
+  volume: BigInt!
+  cumsumSize: BigInt!
+  cumsumCollateral: BigInt!
+  sumMaxSize: BigInt!
+  maxCapital: BigInt!
+  netCapital: BigInt!
+  deposits: BigInt!
+
+  realizedPnl: BigInt!
+  realizedFees: BigInt!
+  realizedPriceImpact: BigInt!
+  realizedSwapImpact: BigInt!
+
+  updatedAt: Int!
+}
+
+type PeriodAccountStat @entity {
+  id: ID!
+  account: String! @index
+  periodStart: Int! @index
+  periodEnd: Int!
+
+  closedCount: Int!
+  wins: Int!
+  losses: Int!
+
+  volume: BigInt!
+  cumsumSize: BigInt!
+  cumsumCollateral: BigInt!
+  sumMaxSize: BigInt!
+  maxCapital: BigInt!
+  netCapital: BigInt!
+
+  realizedPnl: BigInt!
+  realizedFees: BigInt!
+  realizedPriceImpact: BigInt!
+
+  # Period-specific unrealized tracking
+  startUnrealizedPnl: BigInt!
+  startUnrealizedFees: BigInt!
+  startUnrealizedPriceImpact: BigInt!
+
+  hasRank: Boolean!
+}
+
+# =============================================================================
+# CLAIMS & REBATES
+# =============================================================================
+
+type ClaimAction @entity {
+  id: ID!
+  account: String! @index
+  eventName: String!
+
+  marketAddresses: [String!]!
+  tokenAddresses: [String!]!
+  amounts: [String!]!
+  tokenPrices: [String!]!
+  isLongOrders: [Boolean!]!
+
+  timestamp: Int! @index
+  transaction: Transaction!
+}
+
+type ClaimableCollateral @entity {
+  id: ID!
+  account: String! @index
+  marketAddress: String!
+  tokenAddress: String!
+  timeKey: String!
+
+  value: BigInt!
+  factor: BigInt!
+  reductionFactor: BigInt!
+  factorByTime: BigInt!
+  claimed: Boolean!
+
+  updatedAt: Int!
+}
+
+# =============================================================================
+# DEPOSITS & WITHDRAWALS
+# =============================================================================
+
+type DepositAction @entity {
+  id: ID!
+  account: String! @index
+  eventName: String! @index
+  marketAddress: String! @index
+
+  initialLongToken: BigInt
+  initialShortToken: BigInt
+  receivedMarketTokens: BigInt
+
+  executionFee: BigInt
+  callbackGasLimit: BigInt
+
+  key: String! @index
+  timestamp: Int! @index
+  transaction: Transaction!
+}
+
+type WithdrawalAction @entity {
+  id: ID!
+  account: String! @index
+  eventName: String! @index
+  marketAddress: String! @index
+
+  marketTokenAmount: BigInt
+  receivedLongTokenAmount: BigInt
+  receivedShortTokenAmount: BigInt
+
+  executionFee: BigInt
+  callbackGasLimit: BigInt
+
+  key: String! @index
+  timestamp: Int! @index
+  transaction: Transaction!
+}
+
+# =============================================================================
+# MARKET DATA
+# =============================================================================
+
+type MarketInfo @entity {
+  id: ID!
+  marketTokenAddress: String! @index
+  indexTokenAddress: String!
+  longTokenAddress: String!
+  shortTokenAddress: String!
+  isDisabled: Boolean!
+
+  # Pool amounts
+  longPoolAmount: BigInt!
+  shortPoolAmount: BigInt!
+  maxLongPoolAmount: BigInt!
+  maxShortPoolAmount: BigInt!
+  maxLongPoolUsdForDeposit: BigInt!
+  maxShortPoolUsdForDeposit: BigInt!
+  poolValueMax: BigInt!
+  poolValueMin: BigInt!
+
+  # Reserve factors
+  reserveFactorLong: BigInt!
+  reserveFactorShort: BigInt!
+  openInterestReserveFactorLong: BigInt!
+  openInterestReserveFactorShort: BigInt!
+
+  # Open interest
+  longOpenInterestUsd: BigInt!
+  shortOpenInterestUsd: BigInt!
+  longOpenInterestInTokens: BigInt!
+  shortOpenInterestInTokens: BigInt!
+  maxOpenInterestLong: BigInt!
+  maxOpenInterestShort: BigInt!
+
+  # Collateral factors
+  minCollateralFactor: BigInt!
+  minCollateralFactorForOpenInterestLong: BigInt!
+  minCollateralFactorForOpenInterestShort: BigInt!
+
+  # Funding
+  fundingFactor: BigInt!
+  fundingExponentFactor: BigInt!
+  fundingIncreaseFactorPerSecond: BigInt!
+  fundingDecreaseFactorPerSecond: BigInt!
+  thresholdForStableFunding: BigInt!
+  thresholdForDecreaseFunding: BigInt!
+  minFundingFactorPerSecond: BigInt!
+  maxFundingFactorPerSecond: BigInt!
+
+  # Borrowing
+  totalBorrowingFees: BigInt!
+  borrowingFactorPerSecondForLongs: BigInt!
+  borrowingFactorPerSecondForShorts: BigInt!
+
+  # Impact pools
+  positionImpactPoolAmount: BigInt!
+  minPositionImpactPoolAmount: BigInt!
+  positionImpactPoolDistributionRate: BigInt!
+  swapImpactPoolAmountLong: BigInt!
+  swapImpactPoolAmountShort: BigInt!
+
+  # Fee factors
+  positionFeeFactorForPositiveImpact: BigInt!
+  positionFeeFactorForNegativeImpact: BigInt!
+  swapFeeFactorForPositiveImpact: BigInt!
+  swapFeeFactorForNegativeImpact: BigInt!
+  atomicSwapFeeFactor: BigInt!
+
+  # PnL factors
+  maxPnlFactorForTradersLong: BigInt!
+  maxPnlFactorForTradersShort: BigInt!
+
+  # Virtual IDs
+  virtualMarketId: String
+  virtualLongTokenId: String
+  virtualShortTokenId: String
+
+  createdAt: Int!
+  updatedAt: Int!
+}
+
+# =============================================================================
+# ANALYTICS
+# =============================================================================
+
+type VolumeInfo @entity {
+  id: ID!
+  market: String! @index
+  period: String!
+  volumeUsd: BigInt!
+  timestamp: Int! @index
+}
+
+type PositionsVolume @entity {
+  id: ID!
+  market: String! @index
+  volume: BigInt!
+  timestamp: Int! @index
+}
+
+type AprSnapshot @entity {
+  id: ID!
+  address: String! @index
+  aprByFee: BigInt!
+  aprByBorrowingFee: BigInt!
+  snapshotTimestamp: Int! @index
+}
+
+type FeesInfo @entity {
+  id: ID!
+  period: String! @index
+  totalBorrowingFeeUsd: BigInt!
+  totalPositionFeeUsd: BigInt!
+  totalLiquidationFeeUsd: BigInt!
+  totalSwapFeeUsd: BigInt!
+  timestamp: Int! @index
+}
+
+type UserStat @entity {
+  id: ID!
+  uniqueUsers: Int!
+  timestamp: Int!
+}
+
+# =============================================================================
+# GLV (GMX Liquidity Vault)
+# =============================================================================
+
+type GlvDepositAction @entity {
+  id: ID!
+  account: String! @index
+  eventName: String! @index
+  glvAddress: String! @index
+  marketAddress: String
+
+  longTokenAmount: BigInt
+  shortTokenAmount: BigInt
+  receivedGlvTokens: BigInt
+
+  key: String! @index
+  timestamp: Int! @index
+  transaction: Transaction!
+}
+
+type GlvWithdrawalAction @entity {
+  id: ID!
+  account: String! @index
+  eventName: String! @index
+  glvAddress: String! @index
+  marketAddress: String
+
+  glvTokenAmount: BigInt
+  receivedLongTokenAmount: BigInt
+  receivedShortTokenAmount: BigInt
+
+  key: String! @index
+  timestamp: Int! @index
+  transaction: Transaction!
+}

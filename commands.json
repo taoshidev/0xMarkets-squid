@@ -1,0 +1,55 @@
+{
+  "$schema": "https://subsquid.io/schemas/commands.json",
+  "commands": {
+    "clean": {
+      "description": "Delete all build artifacts",
+      "cmd": ["rm", "-rf", "lib"]
+    },
+    "build": {
+      "description": "Build the squid project",
+      "deps": ["clean"],
+      "cmd": ["tsc"]
+    },
+    "up": {
+      "description": "Start a local Postgres database",
+      "cmd": ["docker-compose", "up", "-d"]
+    },
+    "down": {
+      "description": "Stop the local Postgres database",
+      "cmd": ["docker-compose", "down"]
+    },
+    "migration:apply": {
+      "description": "Apply database migrations",
+      "cmd": ["npx", "squid-typeorm-migration", "apply"]
+    },
+    "migration:generate": {
+      "description": "Generate a new database migration",
+      "cmd": ["npx", "squid-typeorm-migration", "generate"]
+    },
+    "codegen": {
+      "description": "Generate TypeORM entities from schema.graphql",
+      "cmd": ["npx", "squid-typeorm-codegen"]
+    },
+    "typegen": {
+      "description": "Generate TypeScript ABI wrappers",
+      "cmd": ["npx", "squid-evm-typegen", "src/abi", "./abi/*.json", "--multicall"]
+    },
+    "process": {
+      "description": "Start the squid processor",
+      "deps": ["build", "migration:apply"],
+      "cmd": ["node", "lib/main.js"]
+    },
+    "process:prod": {
+      "description": "Start the squid processor (production)",
+      "cmd": ["node", "lib/main.js"]
+    },
+    "serve": {
+      "description": "Start the GraphQL server",
+      "cmd": ["npx", "squid-graphql-server"]
+    },
+    "serve:prod": {
+      "description": "Start the GraphQL server (production)",
+      "cmd": ["npx", "squid-graphql-server"]
+    }
+  }
+}

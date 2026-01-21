@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: squid
+      POSTGRES_USER: squid
+      POSTGRES_PASSWORD: squid
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
