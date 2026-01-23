@@ -302,6 +302,25 @@ type MarketInfo @entity {
   positionImpactPoolDistributionRate: BigInt!
   swapImpactPoolAmountLong: BigInt!
   swapImpactPoolAmountShort: BigInt!
+  lentPositionImpactPoolAmount: BigInt
+
+  # Position impact factors
+  positionImpactFactorPositive: BigInt
+  positionImpactFactorNegative: BigInt
+  maxPositionImpactFactorPositive: BigInt
+  maxPositionImpactFactorNegative: BigInt
+  maxPositionImpactFactorForLiquidations: BigInt
+  positionImpactExponentFactor: BigInt
+
+  # Swap impact factors
+  swapImpactFactorPositive: BigInt
+  swapImpactFactorNegative: BigInt
+  swapImpactExponentFactor: BigInt
+
+  # Lendable impact factors
+  maxLendableImpactFactor: BigInt
+  maxLendableImpactFactorForWithdrawals: BigInt
+  maxLendableImpactUsd: BigInt
 
   # Fee factors
   positionFeeFactorForPositiveImpact: BigInt!
@@ -313,6 +332,15 @@ type MarketInfo @entity {
   # PnL factors
   maxPnlFactorForTradersLong: BigInt!
   maxPnlFactorForTradersShort: BigInt!
+
+  # Funding
+  fundingFactorPerSecond: BigInt
+  longsPayShorts: Boolean
+
+  # Virtual inventory
+  virtualPoolAmountForLongToken: BigInt
+  virtualPoolAmountForShortToken: BigInt
+  virtualInventoryForPositions: BigInt
 
   # Virtual IDs
   virtualMarketId: String
