@@ -12,3 +12,6 @@ deploy:
     cmd: ["node", "lib/main.js"]
   api:
     cmd: ["npx", "squid-graphql-server"]
+
+scale:
+  dedicated: false
