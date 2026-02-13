@@ -43,3 +43,11 @@ export function generateAprSnapshotId(
   const ts = Math.floor(timestamp.getTime() / 1000)
   return `${address}-${ts}`
 }
+
+export function generatePriceId(token: string, timestamp: number): string {
+  return `${token.toLowerCase()}-${timestamp}`
+}
+
+export function generateDistributionId(blockHeight: number, logIndex: number): string {
+  return `${blockHeight}-${logIndex}`
+}

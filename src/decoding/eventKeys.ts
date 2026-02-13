@@ -69,6 +69,12 @@ export const GLV_SHIFT_CANCELLED = 'GlvShiftCancelled'
 export const AFFILIATE_REWARD_UPDATED = 'AffiliateRewardUpdated'
 export const AFFILIATE_REWARD_CLAIMED = 'AffiliateRewardClaimed'
 
+// Oracle/Price Events
+export const ORACLE_PRICE_UPDATE = 'OraclePriceUpdate'
+
+// Distribution Events
+export const DISTRIBUTION_CREATED = 'DistributionCreated'
+
 // All trade-related event names for easy filtering
 export const TRADE_EVENT_NAMES = [
   ORDER_CREATED,

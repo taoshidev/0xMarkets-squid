@@ -3,16 +3,18 @@ node_modules/
 
 # Build output
 lib/
+builds/
 
-# Generated files
+# Generated files (re-included below for deployment)
 src/model/generated/
 src/abi/*.ts
 
 # Environment
 .env
 
-# Database
+# Database (re-include migrations for deployment)
 db/
+!db/migrations/
 
 # IDE
 .idea/

@@ -429,3 +429,42 @@ type GlvWithdrawalAction @entity {
   timestamp: Int! @index
   transaction: Transaction!
 }
+
+# =============================================================================
+# PRICES
+# =============================================================================
+
+type Price @entity {
+  id: ID!
+  token: String! @index
+  minPrice: BigInt!
+  maxPrice: BigInt!
+  snapshotTimestamp: Int! @index
+  isSnapshot: Boolean!
+  type: String!
+}
+
+# =============================================================================
+# PLATFORM STATISTICS
+# =============================================================================
+
+type PlatformStat @entity {
+  id: ID!
+  depositedUsers: Int!
+  timestamp: Int!
+}
+
+# =============================================================================
+# DISTRIBUTIONS / INCENTIVES
+# =============================================================================
+
+type Distribution @entity {
+  id: ID!
+  receiver: String! @index
+  typeId: String!
+  amounts: [String!]!
+  amountsInUsd: [String!]!
+  tokens: [String!]!
+  transaction: Transaction!
+  timestamp: Int! @index
+}
