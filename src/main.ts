@@ -4,7 +4,8 @@ import { decodeEventLog, DecodedEventData } from './decoding/eventDecoder'
 import { handleOrderEvent, handlePositionEvent, EventContext } from './handlers/orders'
 import { handlePriceFromPositionEvent, handlePlatformStatFromDeposit } from './handlers/analytics'
 import { handleDistributionEvent } from './handlers/distributions'
-import { TradeAction, Transaction, Price, PlatformStat, Distribution } from './model'
+import { handleMarketEvent } from './handlers/markets'
+import { TradeAction, Transaction, Price, PlatformStat, Distribution, MarketInfo } from './model'
 import { generateLogId } from './utils/ids'
 
 processor.run(db, async (ctx) => {
@@ -14,6 +15,7 @@ processor.run(db, async (ctx) => {
   const prices: Map<string, Price> = new Map()
   const platformStats: Map<string, PlatformStat> = new Map()
   const distributions: Distribution[] = []
+  const marketInfos: Map<string, MarketInfo> = new Map()
 
   // Track unique depositors across this batch.
   // On first batch, load existing count from DB to seed the set size.
@@ -25,6 +27,12 @@ processor.run(db, async (ctx) => {
     for (let i = 0; i < existingStat.depositedUsers; i++) {
       seenDepositors.add(`__existing_${i}`)
     }
+  }
+
+  // Pre-load existing MarketInfo entities so event handlers can update them
+  const existingMarketInfos = await ctx.store.find(MarketInfo)
+  for (const mi of existingMarketInfos) {
+    marketInfos.set(mi.id, mi)
   }
 
   for (const block of ctx.blocks) {
@@ -63,6 +71,7 @@ processor.run(db, async (ctx) => {
           prices,
           platformStats,
           distributions,
+          marketInfos,
           seenDepositors,
         })
       } catch (err) {
@@ -96,6 +105,11 @@ processor.run(db, async (ctx) => {
     await ctx.store.insert(distributions)
     ctx.log.info(`Inserted ${distributions.length} distributions`)
   }
+
+  if (marketInfos.size > 0) {
+    await ctx.store.upsert([...marketInfos.values()])
+    ctx.log.info(`Upserted ${marketInfos.size} market infos`)
+  }
 })
 
 interface EntityCollectors {
@@ -104,6 +118,7 @@ interface EntityCollectors {
   prices: Map<string, Price>
   platformStats: Map<string, PlatformStat>
   distributions: Distribution[]
+  marketInfos: Map<string, MarketInfo>
   seenDepositors: Set<string>
 }
 
@@ -112,6 +127,11 @@ async function processEvent(
   data: DecodedEventData,
   collectors: EntityCollectors
 ): Promise<void> {
+  // Try market events (pool amounts, open interest, impact pools)
+  // These don't return early — a single transaction can emit both
+  // market events AND order/position events
+  handleMarketEvent(ctx, data, collectors.marketInfos)
+
   // Try order events
   const orderResult = await handleOrderEvent(ctx, data)
   if (orderResult) {
