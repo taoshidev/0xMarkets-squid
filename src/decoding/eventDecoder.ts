@@ -6,7 +6,7 @@ import { ethers } from 'ethers'
 export interface DecodedEventData {
   eventName: string
   msgSender: string
-  topic1?: string  // Only for EventLog2
+  topic1?: string  // For EventLog1 and EventLog2
   addressItems: Map<string, string>
   addressArrayItems: Map<string, string[]>
   uintItems: Map<string, bigint>
@@ -23,88 +23,120 @@ export interface DecodedEventData {
   stringArrayItems: Map<string, string[]>
 }
 
-// ABI for decoding EventLog1 and EventLog2
-const EVENT_LOG1_ABI = [
-  'event EventLog1(address msgSender, string eventName, string indexed eventNameHash, tuple(tuple(tuple(string key, address value)[] items, tuple(string key, address[] value)[] arrayItems) addressItems, tuple(tuple(string key, uint256 value)[] items, tuple(string key, uint256[] value)[] arrayItems) uintItems, tuple(tuple(string key, int256 value)[] items, tuple(string key, int256[] value)[] arrayItems) intItems, tuple(tuple(string key, bool value)[] items, tuple(string key, bool[] value)[] arrayItems) boolItems, tuple(tuple(string key, bytes32 value)[] items, tuple(string key, bytes32[] value)[] arrayItems) bytes32Items, tuple(tuple(string key, bytes value)[] items, tuple(string key, bytes[] value)[] arrayItems) bytesItems, tuple(tuple(string key, string value)[] items, tuple(string key, string[] value)[] arrayItems) stringItems) eventData)'
-]
+// Use AbiCoder.decode directly instead of Interface.decodeEventLog to avoid
+// topic hash mismatch between human-readable and JSON ABIs in ethers v6.
+const abiCoder = ethers.AbiCoder.defaultAbiCoder()
 
-const EVENT_LOG2_ABI = [
-  'event EventLog2(address msgSender, string eventName, string indexed eventNameHash, bytes32 indexed topic1, tuple(tuple(tuple(string key, address value)[] items, tuple(string key, address[] value)[] arrayItems) addressItems, tuple(tuple(string key, uint256 value)[] items, tuple(string key, uint256[] value)[] arrayItems) uintItems, tuple(tuple(string key, int256 value)[] items, tuple(string key, int256[] value)[] arrayItems) intItems, tuple(tuple(string key, bool value)[] items, tuple(string key, bool[] value)[] arrayItems) boolItems, tuple(tuple(string key, bytes32 value)[] items, tuple(string key, bytes32[] value)[] arrayItems) bytes32Items, tuple(tuple(string key, bytes value)[] items, tuple(string key, bytes[] value)[] arrayItems) bytesItems, tuple(tuple(string key, string value)[] items, tuple(string key, string[] value)[] arrayItems) stringItems) eventData)'
-]
+// EventLogData tuple type — matches the on-chain EventUtils.EventLogData struct.
+// Structure: (addressItems, uintItems, intItems, boolItems, bytes32Items, bytesItems, stringItems)
+// Each *Items is: (items: (string key, T value)[], arrayItems: (string key, T[] value)[])
+const EVENT_LOG_DATA_TYPE = [
+  'tuple(',
+  'tuple(tuple(string,address)[],tuple(string,address[])[])',  // addressItems
+  ',tuple(tuple(string,uint256)[],tuple(string,uint256[])[])', // uintItems
+  ',tuple(tuple(string,int256)[],tuple(string,int256[])[])',   // intItems
+  ',tuple(tuple(string,bool)[],tuple(string,bool[])[])',       // boolItems
+  ',tuple(tuple(string,bytes32)[],tuple(string,bytes32[])[])', // bytes32Items
+  ',tuple(tuple(string,bytes)[],tuple(string,bytes[])[])',     // bytesItems
+  ',tuple(tuple(string,string)[],tuple(string,string[])[])',   // stringItems
+  ')',
+].join('')
 
-const iface1 = new ethers.Interface(EVENT_LOG1_ABI)
-const iface2 = new ethers.Interface(EVENT_LOG2_ABI)
+// Both EventLog1 and EventLog2 encode the same non-indexed data layout:
+// (address msgSender, string eventName, EventLogData eventData)
+const DATA_TYPES = ['address', 'string', EVENT_LOG_DATA_TYPE]
 
 /**
- * Decode EventLog1 or EventLog2 from raw log data
+ * Decode EventLog1 or EventLog2 from raw log data.
+ *
+ * Uses AbiCoder.decode on the data bytes directly, avoiding
+ * Interface.decodeEventLog which validates topic hashes against
+ * the ABI-computed signature (broken for complex nested tuples
+ * in ethers v6 with human-readable ABI strings).
+ *
+ * Topic layout:
+ *   EventLog1: topics[0]=sig, topics[1]=keccak256(eventName), topics[2]=topic1
+ *   EventLog2: topics[0]=sig, topics[1]=keccak256(eventName), topics[2]=topic1, topics[3]=topic2
  */
 export function decodeEventLog(
   topics: string[],
   data: string,
   isEventLog2: boolean
 ): DecodedEventData {
-  const iface = isEventLog2 ? iface2 : iface1
-  const eventFragment = isEventLog2 ? 'EventLog2' : 'EventLog1'
+  const decoded = abiCoder.decode(DATA_TYPES, data)
 
-  const decoded = iface.decodeEventLog(eventFragment, data, topics)
+  const msgSender = decoded[0] as string
+  const eventName = decoded[1] as string
+  const eventData = decoded[2]  // The EventLogData tuple (positional access)
 
-  const eventData = isEventLog2 ? decoded[4] : decoded[3]
+  // topic1 is at topics[2] for both EventLog1 and EventLog2
+  const topic1 = topics.length > 2 ? topics[2] : undefined
 
   return {
-    eventName: decoded[1] as string,
-    msgSender: decoded[0] as string,
-    topic1: isEventLog2 ? decoded[3] as string : undefined,
+    eventName,
+    msgSender,
+    topic1,
 
-    // Address items
-    addressItems: extractItems(eventData.addressItems.items),
-    addressArrayItems: extractArrayItems(eventData.addressItems.arrayItems),
+    // eventData[0] = addressItems: (items[], arrayItems[])
+    addressItems: extractItems(eventData[0][0]),
+    addressArrayItems: extractArrayItems(eventData[0][1]),
 
-    // Uint items
-    uintItems: extractItems(eventData.uintItems.items, toBigInt),
-    uintArrayItems: extractArrayItems(eventData.uintItems.arrayItems, toBigInt),
+    // eventData[1] = uintItems
+    uintItems: extractItems(eventData[1][0], toBigInt),
+    uintArrayItems: extractArrayItems(eventData[1][1], toBigInt),
 
-    // Int items
-    intItems: extractItems(eventData.intItems.items, toBigInt),
-    intArrayItems: extractArrayItems(eventData.intItems.arrayItems, toBigInt),
+    // eventData[2] = intItems
+    intItems: extractItems(eventData[2][0], toBigInt),
+    intArrayItems: extractArrayItems(eventData[2][1], toBigInt),
 
-    // Bool items
-    boolItems: extractItems(eventData.boolItems.items),
-    boolArrayItems: extractArrayItems(eventData.boolItems.arrayItems),
+    // eventData[3] = boolItems
+    boolItems: extractItems(eventData[3][0]),
+    boolArrayItems: extractArrayItems(eventData[3][1]),
 
-    // Bytes32 items
-    bytes32Items: extractItems(eventData.bytes32Items.items),
-    bytes32ArrayItems: extractArrayItems(eventData.bytes32Items.arrayItems),
+    // eventData[4] = bytes32Items
+    bytes32Items: extractItems(eventData[4][0]),
+    bytes32ArrayItems: extractArrayItems(eventData[4][1]),
 
-    // Bytes items
-    bytesItems: extractItems(eventData.bytesItems.items),
-    bytesArrayItems: extractArrayItems(eventData.bytesItems.arrayItems),
+    // eventData[5] = bytesItems
+    bytesItems: extractItems(eventData[5][0]),
+    bytesArrayItems: extractArrayItems(eventData[5][1]),
 
-    // String items
-    stringItems: extractItems(eventData.stringItems.items),
-    stringArrayItems: extractArrayItems(eventData.stringItems.arrayItems),
+    // eventData[6] = stringItems
+    stringItems: extractItems(eventData[6][0]),
+    stringArrayItems: extractArrayItems(eventData[6][1]),
   }
 }
 
+/**
+ * Extract key-value items from decoded tuple array.
+ * Each item is an ethers Result: [0]=key (string), [1]=value (T)
+ */
 function extractItems<T>(
-  items: Array<{ key: string; value: T }>,
-  transform?: (v: T) => T
+  items: any[],
+  transform?: (v: any) => T
 ): Map<string, T> {
   const map = new Map<string, T>()
   for (const item of items) {
-    const value = transform ? transform(item.value) : item.value
-    map.set(item.key, value)
+    const key = item[0] as string
+    const value = transform ? transform(item[1]) : item[1] as T
+    map.set(key, value)
   }
   return map
 }
 
+/**
+ * Extract key-value[] items from decoded tuple array.
+ * Each item is an ethers Result: [0]=key (string), [1]=value[] (T[])
+ */
 function extractArrayItems<T>(
-  items: Array<{ key: string; value: T[] }>,
-  transform?: (v: T) => T
+  items: any[],
+  transform?: (v: any) => T
 ): Map<string, T[]> {
   const map = new Map<string, T[]>()
   for (const item of items) {
-    const values = transform ? item.value.map(transform) : item.value
-    map.set(item.key, values as T[])
+    const key = item[0] as string
+    const values = transform ? (item[1] as any[]).map(transform) : item[1] as T[]
+    map.set(key, values)
   }
   return map
 }
