@@ -4,6 +4,7 @@ import {
   DecodedEventData,
   getAddress,
   getUint,
+  getInt,
   getBool,
   getBytes32,
   getString,
@@ -91,13 +92,11 @@ export async function handleOrderEvent(
     liquidationFeeAmount: getUint(data, 'liquidationFeeAmount'),
     collateralTotalCostAmount: getUint(data, 'collateralTotalCostAmount'),
 
-    // PnL & Impact
-    pnlUsd: getUint(data, 'pnlUsd'),
-    basePnlUsd: getUint(data, 'basePnlUsd'),
-    priceImpactUsd: getUint(data, 'priceImpactUsd'),
-    priceImpactDiffUsd: getUint(data, 'priceImpactDiffUsd'),
-    priceImpactAmount: getUint(data, 'priceImpactAmount'),
-    swapImpactUsd: getUint(data, 'swapImpactUsd'),
+    // PnL & Impact (signed int256 in contract)
+    basePnlUsd: getInt(data, 'basePnlUsd'),
+    priceImpactUsd: getInt(data, 'priceImpactUsd'),
+    priceImpactDiffUsd: getUint(data, 'values.priceImpactDiffUsd'),
+    priceImpactAmount: getInt(data, 'priceImpactAmount'),
 
     // TWAP
     twapGroupId: getBytes32(data, 'twapGroupId'),
@@ -176,11 +175,10 @@ export async function handlePositionEvent(
     fundingFeeAmount: getUint(data, 'fundingFeeAmount'),
     collateralTotalCostAmount: getUint(data, 'collateralTotalCostAmount'),
 
-    // PnL (for decreases)
-    pnlUsd: getUint(data, 'pnlUsd'),
-    basePnlUsd: getUint(data, 'basePnlUsd'),
-    priceImpactUsd: getUint(data, 'priceImpactUsd'),
-    priceImpactAmount: getUint(data, 'priceImpactAmount'),
+    // PnL & Impact (signed int256 in contract)
+    basePnlUsd: getInt(data, 'basePnlUsd'),
+    priceImpactUsd: getInt(data, 'priceImpactUsd'),
+    priceImpactAmount: getInt(data, 'priceImpactAmount'),
 
     // Metadata
     uiFeeReceiver: getAddress(data, 'uiFeeReceiver') || ZERO_ADDRESS,
