@@ -21,7 +21,7 @@ export const processor = new EvmBatchProcessor()
   })
   .setFinalityConfirmation(10)
   .setBlockRange({
-    from: 19_000_000 // Approximate deployment block - adjust based on actual deployment
+    from: 37_740_000 // Just before EventEmitter deployment at block 37,742,351
   })
   .addLog({
     address: [EVENT_EMITTER_ADDRESS],

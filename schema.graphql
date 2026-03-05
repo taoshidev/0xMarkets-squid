@@ -84,6 +84,7 @@ type Position @entity {
   market: String! @index
   collateralToken: String!
   isLong: Boolean!
+  accountStat: AccountStat!
 
   sizeInUsd: BigInt!
   sizeInTokens: BigInt!

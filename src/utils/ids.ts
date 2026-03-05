@@ -27,6 +27,10 @@ export function generatePeriodAccountStatsId(
   return `${account.toLowerCase()}-${timestamp}`
 }
 
+export function generateAllTimePeriodAccountStatsId(account: string): string {
+  return account.toLowerCase()
+}
+
 export function generateVolumeInfoId(
   market: string,
   period: string,

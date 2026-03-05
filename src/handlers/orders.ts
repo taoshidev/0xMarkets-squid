@@ -169,13 +169,11 @@ export async function handlePositionEvent(
     collateralTokenPriceMin: getUint(data, 'collateralTokenPrice.min'),
     collateralTokenPriceMax: getUint(data, 'collateralTokenPrice.max'),
 
-    // Fees
-    positionFeeAmount: getUint(data, 'positionFeeAmount'),
-    borrowingFeeAmount: getUint(data, 'borrowingFeeAmount'),
-    fundingFeeAmount: getUint(data, 'fundingFeeAmount'),
-    collateralTotalCostAmount: getUint(data, 'collateralTotalCostAmount'),
+    // Fees — NOT in PositionIncrease/Decrease events; populated from PositionFeesCollected via enrichment
+    // positionFeeAmount, borrowingFeeAmount, fundingFeeAmount left undefined here
 
     // PnL & Impact (signed int256 in contract)
+    pnlUsd: getInt(data, 'basePnlUsd'),  // pnlUsd = basePnlUsd for trade history display
     basePnlUsd: getInt(data, 'basePnlUsd'),
     priceImpactUsd: getInt(data, 'priceImpactUsd'),
     priceImpactAmount: getInt(data, 'priceImpactAmount'),
@@ -188,4 +186,40 @@ export async function handlePositionEvent(
   })
 
   return { tradeAction, transaction }
+}
+
+/**
+ * Handle PositionFeesCollected events — fee data emitted separately from PositionIncrease/Decrease.
+ * Returns a partial TradeAction with fee fields, keyed by orderKey for enrichment merge.
+ */
+export function handlePositionFeesEvent(
+  ctx: EventContext,
+  data: DecodedEventData
+): { orderKey: string; fees: PositionFeeData } | null {
+  if (data.eventName !== eventKeys.POSITION_FEES_COLLECTED &&
+      data.eventName !== eventKeys.POSITION_FEES_INFO) {
+    return null
+  }
+
+  const orderKey = getBytes32(data, 'orderKey') || ''
+  if (!orderKey) return null
+
+  return {
+    orderKey,
+    fees: {
+      positionFeeAmount: getUint(data, 'positionFeeAmount'),
+      borrowingFeeAmount: getUint(data, 'borrowingFeeAmount'),
+      fundingFeeAmount: getUint(data, 'fundingFeeAmount'),
+      totalCostAmount: getUint(data, 'totalCostAmount'),
+      collateralTokenPriceMin: getUint(data, 'collateralTokenPrice.min'),
+    },
+  }
+}
+
+export interface PositionFeeData {
+  positionFeeAmount: bigint | undefined
+  borrowingFeeAmount: bigint | undefined
+  fundingFeeAmount: bigint | undefined
+  totalCostAmount: bigint | undefined
+  collateralTokenPriceMin: bigint | undefined
 }
