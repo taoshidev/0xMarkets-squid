@@ -158,7 +158,8 @@ export async function handlePositionEvent(
 
     // Collateral & Size
     initialCollateralTokenAddress: getAddress(data, 'collateralToken') || ZERO_ADDRESS,
-    initialCollateralDeltaAmount: getUint(data, 'collateralDeltaAmount') || 0n,
+    // collateralDeltaAmount is int256 in PositionIncrease, uint256 in PositionDecrease
+    initialCollateralDeltaAmount: getInt(data, 'collateralDeltaAmount') ?? getUint(data, 'collateralDeltaAmount') ?? 0n,
     sizeDeltaUsd: getUint(data, 'sizeDeltaUsd'),
     sizeDeltaInTokens: getUint(data, 'sizeDeltaInTokens'),
 

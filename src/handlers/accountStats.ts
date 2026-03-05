@@ -137,7 +137,12 @@ export function handlePositionAndAccountStats(
 
   const sizeDeltaUsd = getUint(data, 'sizeDeltaUsd') || 0n
   const sizeDeltaInTokens = getUint(data, 'sizeDeltaInTokens') || 0n
-  const collateralDeltaAmount = getUint(data, 'collateralDeltaAmount') || 0n
+  // collateralDeltaAmount is int256 (intItems) in PositionIncrease but uint256 (uintItems) in PositionDecrease
+  const collateralDeltaAmountInt = getInt(data, 'collateralDeltaAmount')
+  const collateralDeltaAmountUint = getUint(data, 'collateralDeltaAmount')
+  const collateralDeltaAmount = collateralDeltaAmountInt != null
+    ? (collateralDeltaAmountInt < 0n ? 0n : collateralDeltaAmountInt)  // abs for increase (int256)
+    : (collateralDeltaAmountUint || 0n)  // uint256 for decrease
   const executionPrice = getUint(data, 'executionPrice') || 0n
   const collateralTokenPriceMin = getUint(data, 'collateralTokenPrice.min') || 0n
 
