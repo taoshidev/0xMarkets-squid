@@ -8,7 +8,8 @@ import * as eventKeys from './decoding/eventKeys'
 import { handlePriceFromPositionEvent, handlePlatformStatFromDeposit } from './handlers/analytics'
 import { handleDistributionEvent } from './handlers/distributions'
 import { handleMarketEvent } from './handlers/markets'
-import { TradeAction, Transaction, Price, PlatformStat, Distribution, MarketInfo, Position, AccountStat, PeriodAccountStat } from './model'
+import { handleVolumeFromPositionEvent, handleFeesFromPositionFeesEvent, handleAprSnapshotFromFees, finalizeAprSnapshots } from './handlers/aggregates'
+import { TradeAction, Transaction, Price, PlatformStat, Distribution, MarketInfo, Position, AccountStat, PeriodAccountStat, VolumeInfo, FeesInfo, AprSnapshot } from './model'
 import { generateLogId } from './utils/ids'
 
 processor.run(db, async (ctx) => {
@@ -24,6 +25,11 @@ processor.run(db, async (ctx) => {
   const positions: Map<string, Position> = new Map()
   const accountStats: Map<string, AccountStat> = new Map()
   const periodAccountStats: Map<string, PeriodAccountStat> = new Map()
+
+  // Aggregate analytics maps
+  const volumeInfos: Map<string, VolumeInfo> = new Map()
+  const feesInfos: Map<string, FeesInfo> = new Map()
+  const aprSnapshots: Map<string, AprSnapshot> = new Map()
 
   // Tracking maps for cross-event enrichment
   const positionEventsByOrderKey: Map<string, TradeAction> = new Map()
@@ -60,6 +66,16 @@ processor.run(db, async (ctx) => {
   const existingPeriodStats = await ctx.store.find(PeriodAccountStat, { where: { periodStart: 0 } })
   for (const s of existingPeriodStats) {
     periodAccountStats.set(s.id, s)
+  }
+
+  // Pre-load existing "total" VolumeInfo and FeesInfo so we accumulate on top
+  const existingTotalVolumes = await ctx.store.find(VolumeInfo, { where: { period: 'total' } })
+  for (const v of existingTotalVolumes) {
+    volumeInfos.set(v.id, v)
+  }
+  const existingTotalFees = await ctx.store.findOneBy(FeesInfo, { id: 'total' })
+  if (existingTotalFees) {
+    feesInfos.set(existingTotalFees.id, existingTotalFees)
   }
 
   for (const block of ctx.blocks) {
@@ -102,6 +118,9 @@ processor.run(db, async (ctx) => {
           positions,
           accountStats,
           periodAccountStats,
+          volumeInfos,
+          feesInfos,
+          aprSnapshots,
           seenDepositors,
           positionEventsByOrderKey,
           orderCreatedByOrderKey,
@@ -115,6 +134,9 @@ processor.run(db, async (ctx) => {
 
   // Enrich OrderExecuted/Cancelled/Updated/Frozen with data from related events
   await enrichTradeActions(ctx.store, tradeActions, positionEventsByOrderKey, orderCreatedByOrderKey, feesByOrderKey)
+
+  // Finalize APR snapshots (convert accumulated fees to annualized rates)
+  finalizeAprSnapshots(aprSnapshots, marketInfos)
 
   // Batch insert all entities - transactions first due to foreign key
   if (transactions.size > 0) {
@@ -162,6 +184,22 @@ processor.run(db, async (ctx) => {
     await ctx.store.upsert([...periodAccountStats.values()])
     ctx.log.info(`Upserted ${periodAccountStats.size} period account stats`)
   }
+
+  // Upsert aggregate analytics entities
+  if (volumeInfos.size > 0) {
+    await ctx.store.upsert([...volumeInfos.values()])
+    ctx.log.info(`Upserted ${volumeInfos.size} volume infos`)
+  }
+
+  if (feesInfos.size > 0) {
+    await ctx.store.upsert([...feesInfos.values()])
+    ctx.log.info(`Upserted ${feesInfos.size} fees infos`)
+  }
+
+  if (aprSnapshots.size > 0) {
+    await ctx.store.upsert([...aprSnapshots.values()])
+    ctx.log.info(`Upserted ${aprSnapshots.size} APR snapshots`)
+  }
 })
 
 interface EntityCollectors {
@@ -174,6 +212,9 @@ interface EntityCollectors {
   positions: Map<string, Position>
   accountStats: Map<string, AccountStat>
   periodAccountStats: Map<string, PeriodAccountStat>
+  volumeInfos: Map<string, VolumeInfo>
+  feesInfos: Map<string, FeesInfo>
+  aprSnapshots: Map<string, AprSnapshot>
   seenDepositors: Set<string>
   // Tracking maps for cross-event enrichment
   positionEventsByOrderKey: Map<string, TradeAction>
@@ -217,6 +258,9 @@ async function processEvent(
     if (price) {
       collectors.prices.set(price.id, price)
     }
+
+    // Aggregate volume from position events
+    handleVolumeFromPositionEvent(ctx, data, collectors.volumeInfos)
     return
   }
 
@@ -224,6 +268,10 @@ async function processEvent(
   const feesResult = handlePositionFeesEvent(ctx, data)
   if (feesResult) {
     collectors.feesByOrderKey.set(feesResult.orderKey, feesResult.fees)
+
+    // Aggregate fees and APR snapshots from fee events
+    handleFeesFromPositionFeesEvent(ctx, data, collectors.feesInfos)
+    handleAprSnapshotFromFees(ctx, data, collectors.aprSnapshots, collectors.marketInfos)
     return
   }
 

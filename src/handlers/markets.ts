@@ -3,6 +3,7 @@ import {
   DecodedEventData,
   getAddress,
   getUint,
+  getInt,
   getBool,
 } from '../decoding/eventDecoder'
 import * as eventKeys from '../decoding/eventKeys'
@@ -30,37 +31,43 @@ const KNOWN_MARKETS: Record<string, {
   shortTokenAddress: string
 }> = {
   // EUR/USD [USDC-USDC]
-  '0xd25daa1a1c740c070a6dc6f0287bd14398c090e4': {
-    indexTokenAddress: '0x86e6ab05217318Db4A63f0361BADBf5aF0c69270',
+  '0xB6BfB9D1b8bF5d3603DA6A0C3452119f96500869': {
+    indexTokenAddress: '0x18909CC26672376e8FDF1fa54Fc5B892dd6E2b0C',
     longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
     shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
   },
   // GBP/USD [USDC-USDC]
-  '0x36c1ef9f39f42d7e84fb054d15e4d3171b7977bf': {
-    indexTokenAddress: '0x29c46a7d11B6A3051f51a47eE93AAc03a907C81e',
+  '0x8c1816E2c44ed62525e128b734FF36579BFdA040': {
+    indexTokenAddress: '0xf7255EAb2968Fb6B8b6226eB25c6EDC2F1CcE60a',
     longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
     shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
   },
   // GOLD/USD [USDC-USDC]
-  '0xba69c6dc7f28e1299e20d5d1d0a48529cb189980': {
-    indexTokenAddress: '0xC2E2d25b96976fC054A5A262e2bc6Fbe8d9bB1e4',
+  '0x5C7309926a1C58cABB5b991867450894099d9A78': {
+    indexTokenAddress: '0xf4ac308123764edFB7453a7446D01277D7DEa1A7',
     longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
     shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
   },
   // USD/JPY [USDC-USDC]
-  '0x4834b9a77b32ca7f1d8a20cf7ca886d92be98aef': {
-    indexTokenAddress: '0x5E45Df87fC8f91D5Bc73B6e75D63742dbE01400A',
+  '0x8C1bFbC4026dC63e2C04962264007b2c57e20314': {
+    indexTokenAddress: '0x7836DF766375f02D71fa3617F5F06a0712699A81',
+    longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
+    shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
+  },
+  // WTI/USD [USDC-USDC]
+  '0xaE9D503A778803d28CaB919DFC090e8eB2464E6a': {
+    indexTokenAddress: '0x4B4A8E5a0deEC8611e647255425eC68A846046d4',
     longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
     shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
   },
   // WBTC/USD [USDC-USDC]
-  '0xa4c80f91f4f4b4095220048cb24186e20e48b9d4': {
+  '0x69C926BE8441174c58D93544fF9dEC7F38c7ce32': {
     indexTokenAddress: '0xD8a6E3FCA403d79b6AD6216b60527F51cc967D39',
     longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
     shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
   },
   // WETH/USD [USDC-USDC]
-  '0x4df435e8d40740291571df779e48662c9521ed7d': {
+  '0x16d3d0c9f0B0C958b281Daa8Cc98cA95991AAFA3': {
     indexTokenAddress: '0x4200000000000000000000000000000000000006',
     longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
     shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
@@ -73,6 +80,8 @@ const MARKET_EVENT_NAMES = [
   eventKeys.OPEN_INTEREST_IN_TOKENS_UPDATED,
   eventKeys.SWAP_IMPACT_POOL_AMOUNT_UPDATED,
   eventKeys.POSITION_IMPACT_POOL_AMOUNT_UPDATED,
+  eventKeys.MARKET_POOL_VALUE_UPDATED,
+  eventKeys.MARKET_POOL_VALUE_INFO,
 ]
 
 /**
@@ -245,6 +254,17 @@ export function handleMarketEvent(
       const nextValue = getUint(data, 'nextValue')
       if (nextValue !== undefined) {
         marketInfo.positionImpactPoolAmount = nextValue
+      }
+      break
+    }
+
+    case eventKeys.MARKET_POOL_VALUE_UPDATED:
+    case eventKeys.MARKET_POOL_VALUE_INFO: {
+      // poolValue is a signed int (can be negative if PnL exceeds pool)
+      const poolValue = getInt(data, 'poolValue')
+      if (poolValue !== undefined && poolValue > 0n) {
+        marketInfo.poolValueMax = poolValue
+        marketInfo.poolValueMin = poolValue
       }
       break
     }
