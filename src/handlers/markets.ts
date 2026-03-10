@@ -30,47 +30,47 @@ const KNOWN_MARKETS: Record<string, {
   longTokenAddress: string
   shortTokenAddress: string
 }> = {
-  // EUR/USD [USDC-USDC]
-  '0xb6bfb9d1b8bf5d3603da6a0c3452119f96500869': {
+  // EUR/USD [USD0-USD0]
+  '0x7054eb596acf4fc1c0686c9b2cdac4ae6c6d0f33': {
     indexTokenAddress: '0x18909CC26672376e8FDF1fa54Fc5B892dd6E2b0C',
-    longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
-    shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
+    longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
   },
-  // GBP/USD [USDC-USDC]
-  '0x8c1816e2c44ed62525e128b734ff36579bfda040': {
+  // GBP/USD [USD0-USD0]
+  '0xa09b59adf15b4ed98a099441b84ff1eabf71b548': {
     indexTokenAddress: '0xf7255EAb2968Fb6B8b6226eB25c6EDC2F1CcE60a',
-    longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
-    shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
+    longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
   },
-  // GOLD/USD [USDC-USDC]
-  '0x5c7309926a1c58cabb5b991867450894099d9a78': {
+  // GOLD/USD [USD0-USD0]
+  '0x89c3b33bee4b9cd1b246be44adced870f74637a3': {
     indexTokenAddress: '0xf4ac308123764edFB7453a7446D01277D7DEa1A7',
-    longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
-    shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
+    longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
   },
-  // USD/JPY [USDC-USDC]
-  '0x8c1bfbc4026dc63e2c04962264007b2c57e20314': {
+  // USD/JPY [USD0-USD0]
+  '0xd847a999face1f862120117c33ae8faba768fd4b': {
     indexTokenAddress: '0x7836DF766375f02D71fa3617F5F06a0712699A81',
-    longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
-    shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
+    longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
   },
-  // WTI/USD [USDC-USDC]
-  '0xae9d503a778803d28cab919dfc090e8eb2464e6a': {
+  // WTI/USD [USD0-USD0]
+  '0x80d260188c592f7f175f843edc257b6a6af6e5ef': {
     indexTokenAddress: '0x4B4A8E5a0deEC8611e647255425eC68A846046d4',
-    longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
-    shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
+    longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
   },
-  // WBTC/USD [USDC-USDC]
-  '0x69c926be8441174c58d93544ff9dec7f38c7ce32': {
+  // WBTC/USD [USD0-USD0]
+  '0x63d05da932541380df8d9ee20d8fdb4b02849398': {
     indexTokenAddress: '0xD8a6E3FCA403d79b6AD6216b60527F51cc967D39',
-    longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
-    shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
+    longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
   },
-  // WETH/USD [USDC-USDC]
-  '0x16d3d0c9f0b0c958b281daa8cc98ca95991aafa3': {
+  // WETH/USD [USD0-USD0]
+  '0x23f40e3279685413b252a6944af9a0641d3aa6ce': {
     indexTokenAddress: '0x4200000000000000000000000000000000000006',
-    longTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
-    shortTokenAddress: '0xFDDFE40Ade3eE9aDE4A2e185C750cf28025BFd6b',
+    longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
   },
 }
 
@@ -201,7 +201,7 @@ export function handleMarketEvent(
     case eventKeys.POOL_AMOUNT_UPDATED: {
       const nextValue = getUint(data, 'nextValue')
       if (nextValue !== undefined) {
-        // All markets use USDC as both long and short token,
+        // All markets use USD0 as both long and short token,
         // so both pools track the same single amount
         marketInfo.longPoolAmount = nextValue
         marketInfo.shortPoolAmount = nextValue

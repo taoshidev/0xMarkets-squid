@@ -7,7 +7,7 @@ import {
 import * as eventKeys from '../decoding/eventKeys'
 import { EventContext } from './orders'
 
-// USDC has 6 decimals, price precision is 10^(30-6) = 10^24
+// USD0 has 6 decimals, price precision is 10^(30-6) = 10^24
 // Fee amounts are in token terms; multiply by price and divide by price precision to get 30-decimal USD
 const PRICE_PRECISION = 10n ** 24n
 
