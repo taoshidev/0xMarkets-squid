@@ -69,6 +69,9 @@ export const GLV_SHIFT_CANCELLED = 'GlvShiftCancelled'
 export const AFFILIATE_REWARD_UPDATED = 'AffiliateRewardUpdated'
 export const AFFILIATE_REWARD_CLAIMED = 'AffiliateRewardClaimed'
 
+// Config Events
+export const SET_UINT = 'SetUint'
+
 // Oracle/Price Events
 export const ORACLE_PRICE_UPDATE = 'OraclePriceUpdate'
 

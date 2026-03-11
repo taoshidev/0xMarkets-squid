@@ -7,7 +7,7 @@ import { handlePositionAndAccountStats } from './handlers/accountStats'
 import * as eventKeys from './decoding/eventKeys'
 import { handlePriceFromPositionEvent, handlePlatformStatFromDeposit } from './handlers/analytics'
 import { handleDistributionEvent } from './handlers/distributions'
-import { handleMarketEvent } from './handlers/markets'
+import { handleMarketEvent, handleConfigEvent } from './handlers/markets'
 import { handleVolumeFromPositionEvent, handleFeesFromPositionFeesEvent, handleAprSnapshotFromFees, finalizeAprSnapshots } from './handlers/aggregates'
 import { TradeAction, Transaction, Price, PlatformStat, Distribution, MarketInfo, Position, AccountStat, PeriodAccountStat, VolumeInfo, FeesInfo, AprSnapshot } from './model'
 import { generateLogId } from './utils/ids'
@@ -231,6 +231,9 @@ async function processEvent(
   // These don't return early — a single transaction can emit both
   // market events AND order/position events
   handleMarketEvent(ctx, data, collectors.marketInfos)
+
+  // Try config events (SetUint — collateral factors, funding params, fee factors, etc.)
+  handleConfigEvent(ctx, data, collectors.marketInfos)
 
   // Try position events FIRST — they must go to the tracking map for enrichment,
   // NOT to tradeActions. Must be checked before handleOrderEvent because

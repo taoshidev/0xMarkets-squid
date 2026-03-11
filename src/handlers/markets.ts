@@ -1,3 +1,4 @@
+import { ethers } from 'ethers'
 import { MarketInfo } from '../model'
 import {
   DecodedEventData,
@@ -5,8 +6,46 @@ import {
   getUint,
   getInt,
   getBool,
+  getBytes32,
 } from '../decoding/eventDecoder'
 import * as eventKeys from '../decoding/eventKeys'
+
+const abiCoder = ethers.AbiCoder.defaultAbiCoder()
+
+/**
+ * Precomputed keccak256(abi.encode("KEY_NAME")) hashes for config keys.
+ * These match the bytes32 constants in contracts/data/Keys.sol.
+ */
+const CONFIG_KEYS = {
+  // data = abi.encode(market)
+  MIN_COLLATERAL_FACTOR: '0x9fc265ee9783e670a7a731141f58b59bca5a260ba3eb3f893412fb613dc559f7',
+  FUNDING_FACTOR: '0x8d25c5b55501c0bb1657a27730a272059c9a87bbf03ea76434f679bfef179e73',
+  FUNDING_EXPONENT_FACTOR: '0x769527e09152c8f6c2369c579559e9b754b40a814f8d7aca18ab79ffef6c3a02',
+  FUNDING_INCREASE_FACTOR_PER_SECOND: '0xf107e6afaae3407c99cd46b4f6b09eab1eb038afa0327733a30098b8781f5019',
+  FUNDING_DECREASE_FACTOR_PER_SECOND: '0xeab049d89d71d8196c610801d3de2720496d1313dd5f0fdd4c5e6be3752d51a7',
+  MIN_FUNDING_FACTOR_PER_SECOND: '0x368afb51b32c3d33dfca82b9cf2acb7189260668d74581e720aba5782e57cd14',
+  MAX_FUNDING_FACTOR_PER_SECOND: '0xbeb1b2c6c23ef59c950f3194c435435cc060a612328d7b143074e6309e18e282',
+  THRESHOLD_FOR_STABLE_FUNDING: '0x183bdff2eb59d396a4199bf4641673c64ce0e2a6229c72f8a07dccbe95d57d11',
+  THRESHOLD_FOR_DECREASE_FUNDING: '0x6eca37816aa74c2687a4153398ea1ad6d8174b8118dbb94527279eb35673ef30',
+  ATOMIC_SWAP_FEE_FACTOR: '0xde72bcc3246e0d5d632117733986ff91c7efefa5ae54a84e77a311a9b3e1bb60',
+
+  // data = abi.encode(market, bool isLong)
+  RESERVE_FACTOR: '0xeb6dbcc031d84cf5bcdec21aafd7b4ea59618b0863960405767329a7ad41889a',
+  OPEN_INTEREST_RESERVE_FACTOR: '0xfb0e1c66a0f6d31a6b27a57ad9f57c3a0afb198688ed6d5930c60914530f220a',
+  MAX_OPEN_INTEREST: '0x00468cb3aa9036ff00a31f90887485d87e1ee0299e9c1e1a838fe5110c4fbafb',
+  MIN_COLLATERAL_FACTOR_FOR_OPEN_INTEREST_MULTIPLIER: '0xdc48ea96f9c72892c8db4fdc046f04409cdef6b91e71b660bce5b8302ce8a9bb',
+
+  // data = abi.encode(market, bool forPositiveImpact)
+  POSITION_FEE_FACTOR: '0x3999256650a6ebfea3dfbd4d56990f4d9048943a0e38ea6aabfc65122556c342',
+  SWAP_FEE_FACTOR: '0x94d46da9c8a5f890b6b58c1e6e78b27ac6d05b5b488adb426ef137d5eb0f3599',
+
+  // data = abi.encode(market, address token)
+  MAX_POOL_AMOUNT: '0xe88b5773e3873a6265fa6e9e8dc016218fbded41751726542157f40b640a2083',
+  MAX_POOL_USD_FOR_DEPOSIT: '0x2db5d586da17dbbdf405b386a76cc03dc4e25079c306e3af459ce5f7241f90b3',
+
+  // data = abi.encode(pnlFactorType, market, bool isLong)
+  MAX_PNL_FACTOR_FOR_TRADERS: '0xab15365d3aa743e766355e2557c230d8f943e195dc84d9b2b05928a07b635ee1',
+} as const
 
 export interface EventContext {
   store: import('@subsquid/typeorm-store').Store
@@ -20,57 +59,73 @@ export interface EventContext {
   }
 }
 
+// Collateral factor defaults by asset class (30-decimal precision).
+// FX: 0.001333 → 500x, Commodities: 0.003333 → 200x, Crypto: 0.006666 → 100x
+const MCF_FX = 1333000000000000000000000000n
+const MCF_COMM = 3333000000000000000000000000n
+const MCF_CRYPTO = 6666000000000000000000000000n
+
 /**
  * Known market configurations for Base Sepolia.
  * Used to create MarketInfo entities when first encountered,
  * since MarketCreated events predate the squid's start block.
+ * Includes default minCollateralFactor so it's never 0 even if
+ * the Config.setUint events predate the squid's start block.
  */
 const KNOWN_MARKETS: Record<string, {
   indexTokenAddress: string
   longTokenAddress: string
   shortTokenAddress: string
+  minCollateralFactor: bigint
 }> = {
   // EUR/USD [USD0-USD0]
   '0x7054eb596acf4fc1c0686c9b2cdac4ae6c6d0f33': {
     indexTokenAddress: '0x18909CC26672376e8FDF1fa54Fc5B892dd6E2b0C',
     longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
     shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    minCollateralFactor: MCF_FX,
   },
   // GBP/USD [USD0-USD0]
   '0xa09b59adf15b4ed98a099441b84ff1eabf71b548': {
     indexTokenAddress: '0xf7255EAb2968Fb6B8b6226eB25c6EDC2F1CcE60a',
     longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
     shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    minCollateralFactor: MCF_FX,
   },
   // GOLD/USD [USD0-USD0]
   '0x89c3b33bee4b9cd1b246be44adced870f74637a3': {
     indexTokenAddress: '0xf4ac308123764edFB7453a7446D01277D7DEa1A7',
     longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
     shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    minCollateralFactor: MCF_COMM,
   },
   // USD/JPY [USD0-USD0]
   '0xd847a999face1f862120117c33ae8faba768fd4b': {
     indexTokenAddress: '0x7836DF766375f02D71fa3617F5F06a0712699A81',
     longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
     shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    minCollateralFactor: MCF_FX,
   },
   // WTI/USD [USD0-USD0]
   '0x80d260188c592f7f175f843edc257b6a6af6e5ef': {
     indexTokenAddress: '0x4B4A8E5a0deEC8611e647255425eC68A846046d4',
     longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
     shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    minCollateralFactor: MCF_COMM,
   },
   // WBTC/USD [USD0-USD0]
   '0x63d05da932541380df8d9ee20d8fdb4b02849398': {
     indexTokenAddress: '0xD8a6E3FCA403d79b6AD6216b60527F51cc967D39',
     longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
     shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    minCollateralFactor: MCF_CRYPTO,
   },
   // WETH/USD [USD0-USD0]
   '0x23f40e3279685413b252a6944af9a0641d3aa6ce': {
     indexTokenAddress: '0x4200000000000000000000000000000000000006',
     longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
     shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    minCollateralFactor: MCF_CRYPTO,
   },
 }
 
@@ -137,7 +192,7 @@ function getOrCreateMarketInfo(
     maxOpenInterestLong: 0n,
     maxOpenInterestShort: 0n,
 
-    minCollateralFactor: 0n,
+    minCollateralFactor: config.minCollateralFactor,
     minCollateralFactorForOpenInterestLong: 0n,
     minCollateralFactorForOpenInterestShort: 0n,
 
@@ -268,6 +323,159 @@ export function handleMarketEvent(
       }
       break
     }
+  }
+
+  return true
+}
+
+/**
+ * Handle SetUint config events and update MarketInfo config fields.
+ * Config.sol emits: eventEmitter.emitEventLog1("SetUint", baseKey, eventData)
+ * eventData contains: bytes32Items["baseKey"], bytesItems["data"], uintItems["value"]
+ */
+export function handleConfigEvent(
+  ctx: EventContext,
+  data: DecodedEventData,
+  marketInfos: Map<string, MarketInfo>
+): boolean {
+  if (data.eventName !== eventKeys.SET_UINT) return false
+
+  const baseKey = getBytes32(data, 'baseKey')
+  const value = getUint(data, 'value')
+  const rawData = data.bytesItems.get('data')
+
+  if (!baseKey || value === undefined || !rawData) return false
+
+  // Decode market address from the data bytes.
+  // For all per-market config keys, market is the first abi.encode parameter.
+  // The second param is a bool — isLong for directional keys, forPositiveImpact for fee keys.
+  let marketAddress: string
+  let boolParam: boolean | undefined
+
+  try {
+    switch (baseKey) {
+      // data = abi.encode(market)
+      case CONFIG_KEYS.MIN_COLLATERAL_FACTOR:
+      case CONFIG_KEYS.FUNDING_FACTOR:
+      case CONFIG_KEYS.FUNDING_EXPONENT_FACTOR:
+      case CONFIG_KEYS.FUNDING_INCREASE_FACTOR_PER_SECOND:
+      case CONFIG_KEYS.FUNDING_DECREASE_FACTOR_PER_SECOND:
+      case CONFIG_KEYS.MIN_FUNDING_FACTOR_PER_SECOND:
+      case CONFIG_KEYS.MAX_FUNDING_FACTOR_PER_SECOND:
+      case CONFIG_KEYS.THRESHOLD_FOR_STABLE_FUNDING:
+      case CONFIG_KEYS.THRESHOLD_FOR_DECREASE_FUNDING:
+      case CONFIG_KEYS.ATOMIC_SWAP_FEE_FACTOR: {
+        const decoded = abiCoder.decode(['address'], rawData)
+        marketAddress = decoded[0] as string
+        break
+      }
+
+      // data = abi.encode(market, bool isLong/forPositiveImpact)
+      case CONFIG_KEYS.RESERVE_FACTOR:
+      case CONFIG_KEYS.OPEN_INTEREST_RESERVE_FACTOR:
+      case CONFIG_KEYS.MAX_OPEN_INTEREST:
+      case CONFIG_KEYS.MIN_COLLATERAL_FACTOR_FOR_OPEN_INTEREST_MULTIPLIER:
+      case CONFIG_KEYS.POSITION_FEE_FACTOR:
+      case CONFIG_KEYS.SWAP_FEE_FACTOR: {
+        const decoded = abiCoder.decode(['address', 'bool'], rawData)
+        marketAddress = decoded[0] as string
+        boolParam = decoded[1] as boolean
+        break
+      }
+
+      // data = abi.encode(market, address token)
+      case CONFIG_KEYS.MAX_POOL_AMOUNT:
+      case CONFIG_KEYS.MAX_POOL_USD_FOR_DEPOSIT: {
+        const decoded = abiCoder.decode(['address', 'address'], rawData)
+        marketAddress = decoded[0] as string
+        // All our markets use USD0 for both long and short, so we set both
+        break
+      }
+
+      default:
+        return false
+    }
+  } catch {
+    return false
+  }
+
+  const normalizedAddress = marketAddress.toLowerCase()
+  const timestampSeconds = Math.floor(ctx.block.timestamp / 1000)
+  const marketInfo = getOrCreateMarketInfo(normalizedAddress, marketInfos, timestampSeconds)
+  if (!marketInfo) return false
+
+  marketInfo.updatedAt = timestampSeconds
+
+  switch (baseKey) {
+    case CONFIG_KEYS.MIN_COLLATERAL_FACTOR:
+      marketInfo.minCollateralFactor = value
+      break
+
+    case CONFIG_KEYS.FUNDING_FACTOR:
+      marketInfo.fundingFactor = value
+      break
+    case CONFIG_KEYS.FUNDING_EXPONENT_FACTOR:
+      marketInfo.fundingExponentFactor = value
+      break
+    case CONFIG_KEYS.FUNDING_INCREASE_FACTOR_PER_SECOND:
+      marketInfo.fundingIncreaseFactorPerSecond = value
+      break
+    case CONFIG_KEYS.FUNDING_DECREASE_FACTOR_PER_SECOND:
+      marketInfo.fundingDecreaseFactorPerSecond = value
+      break
+    case CONFIG_KEYS.MIN_FUNDING_FACTOR_PER_SECOND:
+      marketInfo.minFundingFactorPerSecond = value
+      break
+    case CONFIG_KEYS.MAX_FUNDING_FACTOR_PER_SECOND:
+      marketInfo.maxFundingFactorPerSecond = value
+      break
+    case CONFIG_KEYS.THRESHOLD_FOR_STABLE_FUNDING:
+      marketInfo.thresholdForStableFunding = value
+      break
+    case CONFIG_KEYS.THRESHOLD_FOR_DECREASE_FUNDING:
+      marketInfo.thresholdForDecreaseFunding = value
+      break
+    case CONFIG_KEYS.ATOMIC_SWAP_FEE_FACTOR:
+      marketInfo.atomicSwapFeeFactor = value
+      break
+
+    // Directional keys — boolParam = isLong
+    case CONFIG_KEYS.RESERVE_FACTOR:
+      if (boolParam) { marketInfo.reserveFactorLong = value }
+      else { marketInfo.reserveFactorShort = value }
+      break
+    case CONFIG_KEYS.OPEN_INTEREST_RESERVE_FACTOR:
+      if (boolParam) { marketInfo.openInterestReserveFactorLong = value }
+      else { marketInfo.openInterestReserveFactorShort = value }
+      break
+    case CONFIG_KEYS.MAX_OPEN_INTEREST:
+      if (boolParam) { marketInfo.maxOpenInterestLong = value }
+      else { marketInfo.maxOpenInterestShort = value }
+      break
+    case CONFIG_KEYS.MIN_COLLATERAL_FACTOR_FOR_OPEN_INTEREST_MULTIPLIER:
+      if (boolParam) { marketInfo.minCollateralFactorForOpenInterestLong = value }
+      else { marketInfo.minCollateralFactorForOpenInterestShort = value }
+      break
+
+    // Fee factor keys — boolParam = forPositiveImpact
+    case CONFIG_KEYS.POSITION_FEE_FACTOR:
+      if (boolParam) { marketInfo.positionFeeFactorForPositiveImpact = value }
+      else { marketInfo.positionFeeFactorForNegativeImpact = value }
+      break
+    case CONFIG_KEYS.SWAP_FEE_FACTOR:
+      if (boolParam) { marketInfo.swapFeeFactorForPositiveImpact = value }
+      else { marketInfo.swapFeeFactorForNegativeImpact = value }
+      break
+
+    // Token-pair keys — all markets use USD0 for both long and short
+    case CONFIG_KEYS.MAX_POOL_AMOUNT:
+      marketInfo.maxLongPoolAmount = value
+      marketInfo.maxShortPoolAmount = value
+      break
+    case CONFIG_KEYS.MAX_POOL_USD_FOR_DEPOSIT:
+      marketInfo.maxLongPoolUsdForDeposit = value
+      marketInfo.maxShortPoolUsdForDeposit = value
+      break
   }
 
   return true
