@@ -190,8 +190,10 @@ export function handlePositionAndAccountStats(
     position.sizeInTokens += sizeDeltaInTokens
     position.collateralAmount += collateralDeltaAmount
 
-    if (position.sizeInUsd > position.maxSize) {
+    const oldMaxSize = position.maxSize
+    if (position.sizeInUsd > oldMaxSize) {
       position.maxSize = position.sizeInUsd
+      accountStat.sumMaxSize += (position.sizeInUsd - oldMaxSize)
     }
   } else {
     // PositionDecrease
@@ -216,9 +218,7 @@ export function handlePositionAndAccountStats(
   accountStat.cumsumSize += abs(sizeDeltaUsd)
   accountStat.updatedAt = timestampSeconds
 
-  if (abs(sizeDeltaUsd) > accountStat.sumMaxSize) {
-    accountStat.sumMaxSize = abs(sizeDeltaUsd)
-  }
+  // sumMaxSize is now accumulated incrementally inside the position maxSize update above
 
   if (eventName === eventKeys.POSITION_INCREASE) {
     accountStat.cumsumCollateral += collateralDeltaUsd
