@@ -106,13 +106,6 @@ const KNOWN_MARKETS: Record<string, {
     shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
     minCollateralFactor: MCF_FX,
   },
-  // WTI/USD [USD0-USD0]
-  '0x80d260188c592f7f175f843edc257b6a6af6e5ef': {
-    indexTokenAddress: '0x4B4A8E5a0deEC8611e647255425eC68A846046d4',
-    longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
-    shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
-    minCollateralFactor: MCF_COMM,
-  },
   // WBTC/USD [USD0-USD0]
   '0x63d05da932541380df8d9ee20d8fdb4b02849398': {
     indexTokenAddress: '0xD8a6E3FCA403d79b6AD6216b60527F51cc967D39',
