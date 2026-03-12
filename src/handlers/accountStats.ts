@@ -8,7 +8,7 @@ function abs(n: bigint): bigint {
   return n < 0n ? -n : n
 }
 
-function getOrCreateAccountStat(
+export function getOrCreateAccountStat(
   accountStatsMap: Map<string, AccountStat>,
   account: string,
   timestamp: number
@@ -28,6 +28,7 @@ function getOrCreateAccountStat(
       maxCapital: 0n,
       netCapital: 0n,
       deposits: 0n,
+      totalDepositedUsd0: 0n,
       realizedPnl: 0n,
       realizedFees: 0n,
       realizedPriceImpact: 0n,
@@ -39,7 +40,7 @@ function getOrCreateAccountStat(
   return stat
 }
 
-function getOrCreatePeriodAccountStat(
+export function getOrCreatePeriodAccountStat(
   periodStatsMap: Map<string, PeriodAccountStat>,
   account: string
 ): PeriodAccountStat {
@@ -60,6 +61,7 @@ function getOrCreatePeriodAccountStat(
       sumMaxSize: 0n,
       maxCapital: 0n,
       netCapital: 0n,
+      totalDepositedUsd0: 0n,
       realizedPnl: 0n,
       realizedFees: 0n,
       realizedPriceImpact: 0n,
@@ -253,12 +255,49 @@ export function handlePositionAndAccountStats(
   periodStat.sumMaxSize = accountStat.sumMaxSize
   periodStat.maxCapital = accountStat.maxCapital
   periodStat.netCapital = accountStat.netCapital
+  periodStat.totalDepositedUsd0 = accountStat.totalDepositedUsd0
   periodStat.realizedPnl = accountStat.realizedPnl
   periodStat.realizedFees = accountStat.realizedFees
   periodStat.realizedPriceImpact = accountStat.realizedPriceImpact
   periodStat.closedCount = accountStat.closedCount
   periodStat.wins = accountStat.wins
   periodStat.losses = accountStat.losses
+
+  return true
+}
+
+/**
+ * Increment totalDepositedUsd0 on DepositExecuted events.
+ */
+export function handleDepositAccountStats(
+  ctx: EventContext,
+  data: DecodedEventData,
+  accountStatsMap: Map<string, AccountStat>,
+  periodStatsMap: Map<string, PeriodAccountStat>,
+): boolean {
+  if (data.eventName !== eventKeys.DEPOSIT_EXECUTED) {
+    return false
+  }
+
+  const account = getAddress(data, 'account') || data.msgSender
+  if (!account) return false
+
+  const initialLong = getUint(data, 'initialLongTokenAmount') || 0n
+  const initialShort = getUint(data, 'initialShortTokenAmount') || 0n
+  const depositedAmount = initialLong + initialShort
+
+  if (depositedAmount === 0n) return false
+
+  const timestampSeconds = Math.floor(ctx.block.timestamp / 1000)
+
+  const accountStat = getOrCreateAccountStat(accountStatsMap, account, timestampSeconds)
+  const periodStat = getOrCreatePeriodAccountStat(periodStatsMap, account)
+
+  accountStat.totalDepositedUsd0 += depositedAmount
+  accountStat.updatedAt = timestampSeconds
+
+  // Mirror to period stat
+  periodStat.totalDepositedUsd0 = accountStat.totalDepositedUsd0
 
   return true
 }

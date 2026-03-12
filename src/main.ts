@@ -3,7 +3,7 @@ import { Store } from '@subsquid/typeorm-store'
 import { processor, db, EVENT_EMITTER_ADDRESS, EVENT_LOG1_TOPIC, EVENT_LOG2_TOPIC } from './processor'
 import { decodeEventLog, DecodedEventData } from './decoding/eventDecoder'
 import { handleOrderEvent, handlePositionEvent, handlePositionFeesEvent, PositionFeeData, EventContext } from './handlers/orders'
-import { handlePositionAndAccountStats } from './handlers/accountStats'
+import { handlePositionAndAccountStats, handleDepositAccountStats } from './handlers/accountStats'
 import * as eventKeys from './decoding/eventKeys'
 import { handlePriceFromPositionEvent, handlePlatformStatFromDeposit } from './handlers/analytics'
 import { handleDistributionEvent } from './handlers/distributions'
@@ -291,11 +291,14 @@ async function processEvent(
     return
   }
 
-  // Try deposit events for platform stats
+  // Try deposit events for platform stats + account deposit tracking
   const platformStatResult = handlePlatformStatFromDeposit(ctx, data, collectors.seenDepositors)
   if (platformStatResult) {
     collectors.transactions.set(platformStatResult.transaction.id, platformStatResult.transaction)
     collectors.platformStats.set(platformStatResult.platformStat.id, platformStatResult.platformStat)
+
+    // Track totalDepositedUsd0 per account (append-only for ROI denominator)
+    handleDepositAccountStats(ctx, data, collectors.accountStats, collectors.periodAccountStats)
     return
   }
 
