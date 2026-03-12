@@ -297,7 +297,7 @@ async function processEvent(
     collectors.transactions.set(platformStatResult.transaction.id, platformStatResult.transaction)
     collectors.platformStats.set(platformStatResult.platformStat.id, platformStatResult.platformStat)
 
-    // Track totalDepositedUsd0 per account (append-only for ROI denominator)
+    // Track totalDepositedUsd0 per account
     handleDepositAccountStats(ctx, data, collectors.accountStats, collectors.periodAccountStats)
     return
   }
