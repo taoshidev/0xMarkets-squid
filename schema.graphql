@@ -128,6 +128,7 @@ type AccountStat @entity {
   maxCapital: BigInt!
   netCapital: BigInt!
   deposits: BigInt!
+  totalDepositedUsd0: BigInt!
 
   realizedPnl: BigInt!
   realizedFees: BigInt!
@@ -153,6 +154,8 @@ type PeriodAccountStat @entity {
   sumMaxSize: BigInt!
   maxCapital: BigInt!
   netCapital: BigInt!
+
+  totalDepositedUsd0: BigInt!
 
   realizedPnl: BigInt!
   realizedFees: BigInt!

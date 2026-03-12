@@ -13,7 +13,9 @@
     "serve:prod": "squid-graphql-server",
     "migration:generate": "squid-typeorm-migration generate",
     "migration:apply": "squid-typeorm-migration apply",
-    "db:reset": "sqd down && sqd up && sqd migration:apply"
+    "db:reset": "sqd down && sqd up && sqd migration:apply",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@subsquid/evm-processor": "^1.19.0",
@@ -30,6 +32,7 @@
     "@subsquid/evm-typegen": "^4.3.0",
     "@subsquid/typeorm-codegen": "^2.0.2",
     "@types/node": "^20.10.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^4.1.0"
   }
 }
