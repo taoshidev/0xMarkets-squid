@@ -211,6 +211,7 @@ export function handlePositionFeesEvent(
       positionFeeAmount: getUint(data, 'positionFeeAmount'),
       borrowingFeeAmount: getUint(data, 'borrowingFeeAmount'),
       fundingFeeAmount: getUint(data, 'fundingFeeAmount'),
+      liquidationFeeAmount: getUint(data, 'liquidationFeeAmount'),
       totalCostAmount: getUint(data, 'totalCostAmount'),
       collateralTokenPriceMin: getUint(data, 'collateralTokenPrice.min'),
     },
@@ -221,6 +222,7 @@ export interface PositionFeeData {
   positionFeeAmount: bigint | undefined
   borrowingFeeAmount: bigint | undefined
   fundingFeeAmount: bigint | undefined
+  liquidationFeeAmount: bigint | undefined
   totalCostAmount: bigint | undefined
   collateralTokenPriceMin: bigint | undefined
 }

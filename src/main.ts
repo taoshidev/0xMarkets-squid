@@ -356,6 +356,7 @@ async function enrichTradeActions(
       if (ta.positionFeeAmount == null) ta.positionFeeAmount = fees.positionFeeAmount
       if (ta.borrowingFeeAmount == null) ta.borrowingFeeAmount = fees.borrowingFeeAmount
       if (ta.fundingFeeAmount == null) ta.fundingFeeAmount = fees.fundingFeeAmount
+      if (ta.liquidationFeeAmount == null) ta.liquidationFeeAmount = fees.liquidationFeeAmount
       if (ta.collateralTotalCostAmount == null) ta.collateralTotalCostAmount = fees.totalCostAmount
     }
 

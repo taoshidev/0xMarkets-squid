@@ -89,7 +89,7 @@ export function handleFeesFromPositionFeesEvent(
 
   const positionFeeAmount = getUint(data, 'positionFeeAmount') ?? 0n
   const borrowingFeeAmount = getUint(data, 'borrowingFeeAmount') ?? 0n
-  const fundingFeeAmount = getUint(data, 'fundingFeeAmount') ?? 0n
+  const liquidationFeeAmount = getUint(data, 'liquidationFeeAmount') ?? 0n
   const collateralTokenPriceMin = getUint(data, 'collateralTokenPrice.min')
 
   if (!collateralTokenPriceMin || collateralTokenPriceMin === 0n) return
@@ -97,8 +97,7 @@ export function handleFeesFromPositionFeesEvent(
   // Convert token amounts to 30-decimal USD values
   const positionFeeUsd = positionFeeAmount * collateralTokenPriceMin / PRICE_PRECISION
   const borrowingFeeUsd = borrowingFeeAmount * collateralTokenPriceMin / PRICE_PRECISION
-  // fundingFeeAmount can be negative (paid to trader), only count positive values
-  const liquidationFeeUsd = fundingFeeAmount > 0n ? fundingFeeAmount * collateralTokenPriceMin / PRICE_PRECISION : 0n
+  const liquidationFeeUsd = liquidationFeeAmount * collateralTokenPriceMin / PRICE_PRECISION
 
   const timestampSeconds = Math.floor(ctx.block.timestamp / 1000)
   const dayTs = Math.floor(timestampSeconds / DAY_SECONDS) * DAY_SECONDS
