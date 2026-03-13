@@ -4,11 +4,6 @@ version: 1
 description: 0xMarkets indexer for Base Sepolia testnet
 
 build:
-  cmd:
-    - npm ci
-    - npx squid-typeorm-codegen
-    - npx squid-evm-typegen src/abi ./abi/*.json --multicall
-    - tsc
 
 deploy:
   addons:
