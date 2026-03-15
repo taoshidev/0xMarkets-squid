@@ -1,5 +1,5 @@
-module.exports = class Data1772671069609 {
-    name = 'Data1772671069609'
+module.exports = class Data1773608327621 {
+    name = 'Data1773608327621'
 
     async up(db) {
         await db.query(`CREATE TABLE "transaction" ("id" character varying NOT NULL, "hash" text NOT NULL, "block_number" integer NOT NULL, "timestamp" integer NOT NULL, CONSTRAINT "PK_89eadb93a89810556e1cbcd6ab9" PRIMARY KEY ("id"))`)
@@ -11,12 +11,12 @@ module.exports = class Data1772671069609 {
         await db.query(`CREATE INDEX "IDX_8751bc3ea47c0c373f0942014a" ON "trade_action" ("order_key") `)
         await db.query(`CREATE INDEX "IDX_6a08a35b1cd69e340c608fdfd4" ON "trade_action" ("transaction_id") `)
         await db.query(`CREATE INDEX "IDX_5413319a6a49c7e4aa3f191b54" ON "trade_action" ("timestamp") `)
-        await db.query(`CREATE TABLE "position" ("id" character varying NOT NULL, "account" text NOT NULL, "market" text NOT NULL, "collateral_token" text NOT NULL, "is_long" boolean NOT NULL, "account_stat_id" character varying, "size_in_usd" numeric NOT NULL, "size_in_tokens" numeric NOT NULL, "collateral_amount" numeric NOT NULL, "entry_price" numeric NOT NULL, "max_size" numeric NOT NULL, "realized_fees" numeric NOT NULL, "unrealized_fees" numeric NOT NULL, "realized_price_impact" numeric NOT NULL, "unrealized_price_impact" numeric NOT NULL, "realized_pnl" numeric NOT NULL, "unrealized_pnl" numeric NOT NULL, "snapshot_timestamp" integer, "is_snapshot" boolean NOT NULL, "created_at" integer NOT NULL, "updated_at" integer NOT NULL, CONSTRAINT "PK_b7f483581562b4dc62ae1a5b7e2" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE TABLE "account_stat" ("id" character varying NOT NULL, "closed_count" integer NOT NULL, "wins" integer NOT NULL, "losses" integer NOT NULL, "volume" numeric NOT NULL, "cumsum_size" numeric NOT NULL, "cumsum_collateral" numeric NOT NULL, "sum_max_size" numeric NOT NULL, "max_capital" numeric NOT NULL, "net_capital" numeric NOT NULL, "deposits" numeric NOT NULL, "total_deposited_usd0" numeric NOT NULL, "realized_pnl" numeric NOT NULL, "realized_fees" numeric NOT NULL, "realized_price_impact" numeric NOT NULL, "realized_swap_impact" numeric NOT NULL, "updated_at" integer NOT NULL, CONSTRAINT "PK_ced22b9c2e7bb5e1cf727e92439" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE TABLE "position" ("id" character varying NOT NULL, "account" text NOT NULL, "market" text NOT NULL, "collateral_token" text NOT NULL, "is_long" boolean NOT NULL, "size_in_usd" numeric NOT NULL, "size_in_tokens" numeric NOT NULL, "collateral_amount" numeric NOT NULL, "entry_price" numeric NOT NULL, "max_size" numeric NOT NULL, "realized_fees" numeric NOT NULL, "unrealized_fees" numeric NOT NULL, "realized_price_impact" numeric NOT NULL, "unrealized_price_impact" numeric NOT NULL, "realized_pnl" numeric NOT NULL, "unrealized_pnl" numeric NOT NULL, "snapshot_timestamp" integer, "is_snapshot" boolean NOT NULL, "created_at" integer NOT NULL, "updated_at" integer NOT NULL, "account_stat_id" character varying, CONSTRAINT "PK_b7f483581562b4dc62ae1a5b7e2" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_a3fa7add1f44aea63006e09e46" ON "position" ("account") `)
         await db.query(`CREATE INDEX "IDX_c5575b15c2af612abeedeb69a1" ON "position" ("market") `)
-        await db.query(`CREATE INDEX "IDX_position_account_stat" ON "position" ("account_stat_id") `)
-        await db.query(`CREATE TABLE "account_stat" ("id" character varying NOT NULL, "closed_count" integer NOT NULL, "wins" integer NOT NULL, "losses" integer NOT NULL, "volume" numeric NOT NULL, "cumsum_size" numeric NOT NULL, "cumsum_collateral" numeric NOT NULL, "sum_max_size" numeric NOT NULL, "max_capital" numeric NOT NULL, "net_capital" numeric NOT NULL, "deposits" numeric NOT NULL, "realized_pnl" numeric NOT NULL, "realized_fees" numeric NOT NULL, "realized_price_impact" numeric NOT NULL, "realized_swap_impact" numeric NOT NULL, "updated_at" integer NOT NULL, CONSTRAINT "PK_ced22b9c2e7bb5e1cf727e92439" PRIMARY KEY ("id"))`)
-        await db.query(`CREATE TABLE "period_account_stat" ("id" character varying NOT NULL, "account" text NOT NULL, "period_start" integer NOT NULL, "period_end" integer NOT NULL, "closed_count" integer NOT NULL, "wins" integer NOT NULL, "losses" integer NOT NULL, "volume" numeric NOT NULL, "cumsum_size" numeric NOT NULL, "cumsum_collateral" numeric NOT NULL, "sum_max_size" numeric NOT NULL, "max_capital" numeric NOT NULL, "net_capital" numeric NOT NULL, "realized_pnl" numeric NOT NULL, "realized_fees" numeric NOT NULL, "realized_price_impact" numeric NOT NULL, "start_unrealized_pnl" numeric NOT NULL, "start_unrealized_fees" numeric NOT NULL, "start_unrealized_price_impact" numeric NOT NULL, "has_rank" boolean NOT NULL, CONSTRAINT "PK_bb314171072baedd47be0852416" PRIMARY KEY ("id"))`)
+        await db.query(`CREATE INDEX "IDX_f84ec41e8b41e15b9a18e126bd" ON "position" ("account_stat_id") `)
+        await db.query(`CREATE TABLE "period_account_stat" ("id" character varying NOT NULL, "account" text NOT NULL, "period_start" integer NOT NULL, "period_end" integer NOT NULL, "closed_count" integer NOT NULL, "wins" integer NOT NULL, "losses" integer NOT NULL, "volume" numeric NOT NULL, "cumsum_size" numeric NOT NULL, "cumsum_collateral" numeric NOT NULL, "sum_max_size" numeric NOT NULL, "max_capital" numeric NOT NULL, "net_capital" numeric NOT NULL, "total_deposited_usd0" numeric NOT NULL, "realized_pnl" numeric NOT NULL, "realized_fees" numeric NOT NULL, "realized_price_impact" numeric NOT NULL, "start_unrealized_pnl" numeric NOT NULL, "start_unrealized_fees" numeric NOT NULL, "start_unrealized_price_impact" numeric NOT NULL, "has_rank" boolean NOT NULL, CONSTRAINT "PK_bb314171072baedd47be0852416" PRIMARY KEY ("id"))`)
         await db.query(`CREATE INDEX "IDX_d48ad46979ace63b6a99c82d2b" ON "period_account_stat" ("account") `)
         await db.query(`CREATE INDEX "IDX_49fb299d0694f14b715a9ea3d5" ON "period_account_stat" ("period_start") `)
         await db.query(`CREATE TABLE "claim_action" ("id" character varying NOT NULL, "account" text NOT NULL, "event_name" text NOT NULL, "market_addresses" text array NOT NULL, "token_addresses" text array NOT NULL, "amounts" text array NOT NULL, "token_prices" text array NOT NULL, "is_long_orders" boolean array NOT NULL, "timestamp" integer NOT NULL, "transaction_id" character varying, CONSTRAINT "PK_43091688806d31df16f7466909e" PRIMARY KEY ("id"))`)
@@ -77,13 +77,13 @@ module.exports = class Data1772671069609 {
         await db.query(`CREATE INDEX "IDX_3f29c2a3df7cabc003ae145fd0" ON "distribution" ("transaction_id") `)
         await db.query(`CREATE INDEX "IDX_280bc2f68470640844bb88eece" ON "distribution" ("timestamp") `)
         await db.query(`ALTER TABLE "trade_action" ADD CONSTRAINT "FK_6a08a35b1cd69e340c608fdfd48" FOREIGN KEY ("transaction_id") REFERENCES "transaction"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
+        await db.query(`ALTER TABLE "position" ADD CONSTRAINT "FK_f84ec41e8b41e15b9a18e126bdc" FOREIGN KEY ("account_stat_id") REFERENCES "account_stat"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "claim_action" ADD CONSTRAINT "FK_4b733c1ff5148f63e68bdb7f8d1" FOREIGN KEY ("transaction_id") REFERENCES "transaction"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "deposit_action" ADD CONSTRAINT "FK_8de64f2caf1adb5ab2b574deadf" FOREIGN KEY ("transaction_id") REFERENCES "transaction"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "withdrawal_action" ADD CONSTRAINT "FK_4aea3902e1d161ae8eab306b989" FOREIGN KEY ("transaction_id") REFERENCES "transaction"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "glv_deposit_action" ADD CONSTRAINT "FK_bd08a0fdd61c075137936d2279b" FOREIGN KEY ("transaction_id") REFERENCES "transaction"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "glv_withdrawal_action" ADD CONSTRAINT "FK_4e1dc52c0a337e9641b66c20585" FOREIGN KEY ("transaction_id") REFERENCES "transaction"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "distribution" ADD CONSTRAINT "FK_3f29c2a3df7cabc003ae145fd02" FOREIGN KEY ("transaction_id") REFERENCES "transaction"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
-        await db.query(`ALTER TABLE "position" ADD CONSTRAINT "FK_position_account_stat" FOREIGN KEY ("account_stat_id") REFERENCES "account_stat"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
     }
 
     async down(db) {
@@ -96,10 +96,11 @@ module.exports = class Data1772671069609 {
         await db.query(`DROP INDEX "public"."IDX_8751bc3ea47c0c373f0942014a"`)
         await db.query(`DROP INDEX "public"."IDX_6a08a35b1cd69e340c608fdfd4"`)
         await db.query(`DROP INDEX "public"."IDX_5413319a6a49c7e4aa3f191b54"`)
+        await db.query(`DROP TABLE "account_stat"`)
         await db.query(`DROP TABLE "position"`)
         await db.query(`DROP INDEX "public"."IDX_a3fa7add1f44aea63006e09e46"`)
         await db.query(`DROP INDEX "public"."IDX_c5575b15c2af612abeedeb69a1"`)
-        await db.query(`DROP TABLE "account_stat"`)
+        await db.query(`DROP INDEX "public"."IDX_f84ec41e8b41e15b9a18e126bd"`)
         await db.query(`DROP TABLE "period_account_stat"`)
         await db.query(`DROP INDEX "public"."IDX_d48ad46979ace63b6a99c82d2b"`)
         await db.query(`DROP INDEX "public"."IDX_49fb299d0694f14b715a9ea3d5"`)
@@ -161,13 +162,12 @@ module.exports = class Data1772671069609 {
         await db.query(`DROP INDEX "public"."IDX_3f29c2a3df7cabc003ae145fd0"`)
         await db.query(`DROP INDEX "public"."IDX_280bc2f68470640844bb88eece"`)
         await db.query(`ALTER TABLE "trade_action" DROP CONSTRAINT "FK_6a08a35b1cd69e340c608fdfd48"`)
+        await db.query(`ALTER TABLE "position" DROP CONSTRAINT "FK_f84ec41e8b41e15b9a18e126bdc"`)
         await db.query(`ALTER TABLE "claim_action" DROP CONSTRAINT "FK_4b733c1ff5148f63e68bdb7f8d1"`)
         await db.query(`ALTER TABLE "deposit_action" DROP CONSTRAINT "FK_8de64f2caf1adb5ab2b574deadf"`)
         await db.query(`ALTER TABLE "withdrawal_action" DROP CONSTRAINT "FK_4aea3902e1d161ae8eab306b989"`)
         await db.query(`ALTER TABLE "glv_deposit_action" DROP CONSTRAINT "FK_bd08a0fdd61c075137936d2279b"`)
         await db.query(`ALTER TABLE "glv_withdrawal_action" DROP CONSTRAINT "FK_4e1dc52c0a337e9641b66c20585"`)
         await db.query(`ALTER TABLE "distribution" DROP CONSTRAINT "FK_3f29c2a3df7cabc003ae145fd02"`)
-        await db.query(`ALTER TABLE "position" DROP CONSTRAINT "FK_position_account_stat"`)
-        await db.query(`DROP INDEX "public"."IDX_position_account_stat"`)
     }
 }
