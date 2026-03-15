@@ -99,6 +99,13 @@ const KNOWN_MARKETS: Record<string, {
     shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
     minCollateralFactor: MCF_COMM,
   },
+  // XAG/USD [USD0-USD0]
+  '0xf95b646d40bb4bc5e1b7a60c3d79ff5aa41bf967': {
+    indexTokenAddress: '0x25f79151C3E00ba7710EcF02192836994E36b440',
+    longTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    shortTokenAddress: '0x3ae4474579d24a743c9016F017e76185A834d837',
+    minCollateralFactor: MCF_COMM,
+  },
   // USD/JPY [USD0-USD0]
   '0xd847a999face1f862120117c33ae8faba768fd4b': {
     indexTokenAddress: '0x7836DF766375f02D71fa3617F5F06a0712699A81',
