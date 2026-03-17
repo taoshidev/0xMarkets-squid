@@ -5,7 +5,7 @@ import { TypeormDatabase } from '@subsquid/typeorm-store'
 const CHAIN_ID = 84532
 
 // EventEmitter contract address on Base Sepolia
-export const EVENT_EMITTER_ADDRESS = '0x68001935Ec7C2e3980f99435db3CabC89dea602B'.toLowerCase()
+export const EVENT_EMITTER_ADDRESS = '0xd5aAfa71f745645Db84cB4877873701ddAf2514c'.toLowerCase()
 
 // EventLog1 and EventLog2 topic hashes
 // EventLog1(address,string,string,tuple)
