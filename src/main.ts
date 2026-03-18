@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { Store } from '@subsquid/typeorm-store'
-import { processor, db, EVENT_EMITTER_ADDRESS, EVENT_LOG1_TOPIC, EVENT_LOG2_TOPIC } from './processor'
+import { processor, db, EVENT_EMITTER_ADDRESS, EVENT_EMITTER_ADDRESSES, EVENT_LOG1_TOPIC, EVENT_LOG2_TOPIC } from './processor'
 import { decodeEventLog, DecodedEventData } from './decoding/eventDecoder'
 import { handleOrderEvent, handlePositionEvent, handlePositionFeesEvent, PositionFeeData, EventContext } from './handlers/orders'
 import { handlePositionAndAccountStats, handleDepositAccountStats } from './handlers/accountStats'
@@ -82,8 +82,8 @@ processor.run(db, async (ctx) => {
     for (let i = 0; i < block.logs.length; i++) {
       const log = block.logs[i]
 
-      // Only process EventEmitter logs
-      if (log.address.toLowerCase() !== EVENT_EMITTER_ADDRESS) {
+      // Only process EventEmitter logs (old + new)
+      if (!EVENT_EMITTER_ADDRESSES.has(log.address.toLowerCase())) {
         continue
       }
 
