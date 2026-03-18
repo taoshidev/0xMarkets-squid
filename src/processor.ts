@@ -45,4 +45,8 @@ export const processor = new EvmBatchProcessor()
 
 // Database connection uses environment variables:
 // DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
-export const db = new TypeormDatabase({ supportHotBlocks: true })
+// Hot blocks disabled: accumulative operations (realizedPnl += X) are not
+// idempotent — reprocessing during reorgs causes double-counting.
+// With setFinalityConfirmation(10), we wait ~20s for finality which is
+// fine for leaderboard data.
+export const db = new TypeormDatabase({ supportHotBlocks: false })
