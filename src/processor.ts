@@ -4,11 +4,8 @@ import { TypeormDatabase } from '@subsquid/typeorm-store'
 // Base Sepolia
 const CHAIN_ID = 84532
 
-// EventEmitter contract addresses on Base Sepolia
-// Both old and new are indexed to preserve historical leaderboard data
-const OLD_EVENT_EMITTER = '0xd5aAfa71f745645Db84cB4877873701ddAf2514c'.toLowerCase()
+// EventEmitter contract address on Base Sepolia
 export const EVENT_EMITTER_ADDRESS = '0x68001935Ec7C2e3980f99435db3CabC89dea602B'.toLowerCase()
-export const EVENT_EMITTER_ADDRESSES = new Set([OLD_EVENT_EMITTER, EVENT_EMITTER_ADDRESS])
 
 // EventLog1 and EventLog2 topic hashes
 // EventLog1(address,string,string,tuple)
@@ -24,10 +21,10 @@ export const processor = new EvmBatchProcessor()
   })
   .setFinalityConfirmation(10)
   .setBlockRange({
-    from: 37_742_000 // Just before EventEmitter deployment at block 37,742,351
+    from: 38_800_000 // Just before new EventEmitter deployment (~Mar 13, 2026)
   })
   .addLog({
-    address: [OLD_EVENT_EMITTER, EVENT_EMITTER_ADDRESS],
+    address: [EVENT_EMITTER_ADDRESS],
     topic0: [EVENT_LOG1_TOPIC, EVENT_LOG2_TOPIC],
     transaction: true
   })
