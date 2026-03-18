@@ -148,8 +148,11 @@ export function handlePositionAndAccountStats(
   const executionPrice = getUint(data, 'executionPrice') || 0n
   const collateralTokenPriceMin = getUint(data, 'collateralTokenPrice.min') || 0n
 
-  // Signed values
-  const basePnlUsd = getInt(data, 'basePnlUsd') || 0n
+  // Signed values — clamp to position size to guard against contract bugs
+  // (e.g. reversed-market oracle errors producing billion-dollar PnL on testnet)
+  let basePnlUsd = getInt(data, 'basePnlUsd') || 0n
+  if (basePnlUsd > sizeDeltaUsd) basePnlUsd = sizeDeltaUsd
+  if (basePnlUsd < -sizeDeltaUsd) basePnlUsd = -sizeDeltaUsd
   const priceImpactUsd = getInt(data, 'priceImpactUsd') || 0n
 
   // Fees from PositionFeesCollected event (separate from PositionIncrease/Decrease)
