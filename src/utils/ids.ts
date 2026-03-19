@@ -31,6 +31,10 @@ export function generateAllTimePeriodAccountStatsId(account: string): string {
   return account.toLowerCase()
 }
 
+export function generateCompetitionPeriodId(account: string, periodStart: number, periodEnd: number): string {
+  return `${account.toLowerCase()}-${periodStart}-${periodEnd}`
+}
+
 export function generateVolumeInfoId(
   market: string,
   period: string,

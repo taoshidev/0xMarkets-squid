@@ -3,7 +3,7 @@ import { Store } from '@subsquid/typeorm-store'
 import { processor, db, EVENT_EMITTER_ADDRESS, EVENT_LOG1_TOPIC, EVENT_LOG2_TOPIC } from './processor'
 import { decodeEventLog, DecodedEventData } from './decoding/eventDecoder'
 import { handleOrderEvent, handlePositionEvent, handlePositionFeesEvent, PositionFeeData, EventContext } from './handlers/orders'
-import { handlePositionAndAccountStats, handleDepositAccountStats } from './handlers/accountStats'
+import { handlePositionAndAccountStats, handleDepositAccountStats, COMPETITION_PERIODS } from './handlers/accountStats'
 import * as eventKeys from './decoding/eventKeys'
 import { handlePriceFromPositionEvent, handlePlatformStatFromDeposit } from './handlers/analytics'
 import { handleDistributionEvent } from './handlers/distributions'
@@ -63,9 +63,19 @@ processor.run(db, async (ctx) => {
   for (const s of existingAccountStats) {
     accountStats.set(s.id, s)
   }
+  // Load all-time period stats
   const existingPeriodStats = await ctx.store.find(PeriodAccountStat, { where: { periodStart: 0 } })
   for (const s of existingPeriodStats) {
     periodAccountStats.set(s.id, s)
+  }
+  // Load competition period stats
+  for (const period of COMPETITION_PERIODS) {
+    const compPeriodStats = await ctx.store.find(PeriodAccountStat, {
+      where: { periodStart: period.start, periodEnd: period.end }
+    })
+    for (const s of compPeriodStats) {
+      periodAccountStats.set(s.id, s)
+    }
   }
 
   // Pre-load existing "total" VolumeInfo and FeesInfo so we accumulate on top

@@ -1,12 +1,27 @@
 import { Position, AccountStat, PeriodAccountStat } from '../model'
 import { DecodedEventData, getAddress, getUint, getInt, getBool } from '../decoding/eventDecoder'
 import * as eventKeys from '../decoding/eventKeys'
-import { generatePositionId, generateAccountStatsId, generateAllTimePeriodAccountStatsId } from '../utils/ids'
+import { generatePositionId, generateAccountStatsId, generateAllTimePeriodAccountStatsId, generateCompetitionPeriodId } from '../utils/ids'
 import { EventContext, PositionFeeData } from './orders'
 
 function abs(n: bigint): bigint {
   return n < 0n ? -n : n
 }
+
+// Competition periods — add new competitions here.
+// The squid will create separate PeriodAccountStats for each period,
+// accumulating only trades that fall within the window.
+export interface CompetitionPeriod {
+  start: number  // unix timestamp
+  end: number    // unix timestamp
+}
+
+export const COMPETITION_PERIODS: CompetitionPeriod[] = [
+  // Test competition: March 19 00:00 UTC → March 22 00:00 UTC (end of Friday)
+  { start: 1773878400, end: 1774137600 },
+  // Testnet Trading Competition: March 23 00:00 UTC – April 22 00:00 UTC
+  { start: 1774224000, end: 1776816000 },
+]
 
 export function getOrCreateAccountStat(
   accountStatsMap: Map<string, AccountStat>,
@@ -73,6 +88,47 @@ export function getOrCreatePeriodAccountStat(
     periodStatsMap.set(id, stat)
   }
   return stat
+}
+
+function getOrCreateCompetitionPeriodStat(
+  periodStatsMap: Map<string, PeriodAccountStat>,
+  account: string,
+  period: CompetitionPeriod,
+): PeriodAccountStat {
+  const id = generateCompetitionPeriodId(account, period.start, period.end)
+  let stat = periodStatsMap.get(id)
+  if (!stat) {
+    stat = new PeriodAccountStat({
+      id,
+      account: account.toLowerCase(),
+      periodStart: period.start,
+      periodEnd: period.end,
+      closedCount: 0,
+      wins: 0,
+      losses: 0,
+      volume: 0n,
+      cumsumSize: 0n,
+      cumsumCollateral: 0n,
+      sumMaxSize: 0n,
+      maxCapital: 0n,
+      netCapital: 0n,
+      totalDepositedUsd0: 0n,
+      realizedPnl: 0n,
+      realizedFees: 0n,
+      realizedPriceImpact: 0n,
+      startUnrealizedPnl: 0n,
+      startUnrealizedFees: 0n,
+      startUnrealizedPriceImpact: 0n,
+      hasRank: true,
+    })
+    periodStatsMap.set(id, stat)
+  }
+  return stat
+}
+
+/** Get all competition periods that contain the given timestamp */
+function getActiveCompetitionPeriods(timestamp: number): CompetitionPeriod[] {
+  return COMPETITION_PERIODS.filter(p => timestamp >= p.start && timestamp < p.end)
 }
 
 function getOrCreatePosition(
@@ -266,6 +322,34 @@ export function handlePositionAndAccountStats(
   periodStat.wins = accountStat.wins
   periodStat.losses = accountStat.losses
 
+  // --- Accumulate to competition period stats ---
+  for (const period of getActiveCompetitionPeriods(timestampSeconds)) {
+    const compStat = getOrCreateCompetitionPeriodStat(periodStatsMap, account, period)
+
+    compStat.volume += abs(sizeDeltaUsd)
+    compStat.cumsumSize += abs(sizeDeltaUsd)
+
+    if (eventName === eventKeys.POSITION_INCREASE) {
+      compStat.cumsumCollateral += collateralDeltaUsd
+      compStat.netCapital += collateralDeltaUsd
+    } else {
+      compStat.netCapital -= collateralDeltaUsd
+      compStat.realizedPnl += basePnlUsd
+      compStat.realizedFees += totalFeeUsd
+      compStat.realizedPriceImpact += priceImpactUsd
+
+      if (position.sizeInUsd === 0n) {
+        compStat.closedCount++
+        if (basePnlUsd > 0n) compStat.wins++
+        else if (basePnlUsd < 0n) compStat.losses++
+      }
+    }
+
+    if (compStat.netCapital > compStat.maxCapital) {
+      compStat.maxCapital = compStat.netCapital
+    }
+  }
+
   return true
 }
 
@@ -301,6 +385,12 @@ export function handleDepositAccountStats(
 
   // Mirror to period stat
   periodStat.totalDepositedUsd0 = accountStat.totalDepositedUsd0
+
+  // Accumulate to competition period stats
+  for (const period of getActiveCompetitionPeriods(timestampSeconds)) {
+    const compStat = getOrCreateCompetitionPeriodStat(periodStatsMap, account, period)
+    compStat.totalDepositedUsd0 += depositedAmount
+  }
 
   return true
 }
