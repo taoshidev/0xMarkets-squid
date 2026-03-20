@@ -21,7 +21,7 @@ export const processor = new EvmBatchProcessor()
   })
   .setFinalityConfirmation(10)
   .setBlockRange({
-    from: 38_800_000 // Just before new EventEmitter deployment (~Mar 13, 2026)
+    from: 37_000_000 // Before earliest user position opens
   })
   .addLog({
     address: [EVENT_EMITTER_ADDRESS],
