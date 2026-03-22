@@ -19,8 +19,8 @@ export interface CompetitionPeriod {
 export const COMPETITION_PERIODS: CompetitionPeriod[] = [
   // Test competition: March 19 00:00 UTC → March 22 00:00 UTC (end of Friday)
   { start: 1773878400, end: 1774137600 },
-  // Testnet Trading Competition: March 23 00:00 UTC – April 22 00:00 UTC
-  { start: 1774224000, end: 1776816000 },
+  // Testnet Trading Competition: March 23 18:00 UTC – April 22 00:00 UTC
+  { start: 1774288800, end: 1776816000 },
 ]
 
 export function getOrCreateAccountStat(
